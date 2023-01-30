@@ -248,8 +248,36 @@ write.csv(peakTable(xsgf), file = "ENDO_peakTable.csv")
 write.csv(peakTable(xsgfx), file = "EXO_peakTable.csv")
 
 
-data.pca <- read.csv()
-data.pcax <- read.csv()
+# ENDO: re-import data from results.csv file for statistical analysis
+data.pca <- read.csv("MS1_ENDO_results.csv")
+
+# identify duplicated value and rename 
+dup <- anyDuplicated(data.pca[,1])
+data.pca[dup,1] <- paste(data.pca[dup,1], "x", sep = "")
+
+# set first row as rownames
+# subset without first row
+# set column names to numbers 1-25
+rownames(data.pca) <- data.pca[,1]
+data.pca <- data.pca[, -1]
+colnames(data.pca) <- seq.int(1, 25)
+
+
+# EXO: re-import data from results.csv
+data.pcax <- read.csv("MS1_EXO_results.csv")
+
+# identify duplicated value and rename 
+dup <- anyDuplicated(data.pcax[,1])
+data.pcax[dup,1] <- paste(data.pcax[dup,1], "x", sep = "")
+
+# set first row as rownames
+# subset without first row
+# set column names to numbers 1-25
+rownames(data.pcax) <- data.pcax[,1]
+data.pcax <- data.pcax[, -1]
+colnames(data.pcax) <- seq.int(1, 25)
+
+
 
 ###----PCA----
 
