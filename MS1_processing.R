@@ -2,7 +2,7 @@
 ## XCMS package for analysis
 ## xcmsSet object
 
-###-------library-----
+## -------library-----
 
 library(Spectra)
 library(xcms)
@@ -16,6 +16,7 @@ library(pheatmap)
 library(SummarizedExperiment)
 library(knitr)
 library(ggplot2)
+library(vegan)
 
 ###------parallelization----
 
@@ -37,6 +38,7 @@ if (.Platform$OS.type == "unix") {
 input_dir <- paste(getwd(), "/MS1/", sep = "")
 input_dir
 
+###----ENDO files----
 # create a list of all MS1 ENDO metabolome files in data folder
 MS1_ENDO_files <- data.frame(list.files(input_dir, pattern = "ENDO"))
 View(MS1_ENDO_files)
@@ -64,24 +66,23 @@ xs <- xcmsSet(files = paste(input_dir, MS1_ENDO_files[,], sep = ""),
 # Need to define sampclass to identify the different classes of data, eg Pp, Sm, CoCu
 # loop runs but doesn't add vector/name to correct file, names all of the the same
 
-for (i in 1:length(phenoData(xs))){
-  if (grepl("1A|1b|2a|2b|3a|3b|4a|4b", phenoData(xs)) == TRUE) {
-    sampclass(xs) <- c("Sm")
-  } else if (grepl("5a|5b|6a|6b|7a|7b|8a|8b", phenoData(xs)) == TRUE){
-    sampclass(xs) <- c("Pp")
-  } else if (grepl("MB", phenoData(xs)) == TRUE){
-    sampclass(xs) <- c("MB")
-  } else {
-    sampclass(xs) <- c("CoCu")
-  }
-}
+#for (i in 1:length(phenoData(xs))){
+#  if (grepl("1A|1b|2a|2b|3a|3b|4a|4b", phenoData(xs)) == TRUE) {
+#     sampclass(xs) <- c("Sm")
+#  } else if (grepl("5a|5b|6a|6b|7a|7b|8a|8b", phenoData(xs)) == TRUE){
+#    sampclass(xs) <- c("Pp")
+#  } else if (grepl("MB", phenoData(xs)) == TRUE){
+#    sampclass(xs) <- c("MB")
+#  } else {
+#    sampclass(xs) <- c("CoCu")
+#  }
+#}
 
 # until loop runs for class naming in either xcmsSet or pd1, do it manuallly
-sampclass(xs) <- c(rep(x = "CoCu", times = 6), 
+sampclass(xs) <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
                    rep(x = "Sm", times = 8), 
                    rep(x = "Pp", times = 8),
-                   rep(x = "CoCu", times = 2),
-                   "MB")
+                   "CoCuSm", "CoCuPp", "MB")
 
 # summary of xcmsSet
 xs
@@ -116,6 +117,7 @@ xsg <- retcor(object = xsg)
 xsg <- group(object = xsg)
 xsg@groups[1:5, ]
 
+
 ## Missing value imputation
 # First test by outputting first values of dataset
 groupval(object = xsg, value = "into")[1:5, 1:10]
@@ -133,6 +135,103 @@ plotQC(xsgf, what = "rtdevhist")
 
 # Get peak intensity matrix, groupvalue shows for each sample each group as rt/mz correlation
 results <- groupval(xsgf, "medret", "into")
+
+###----EXO files-----
+# create a list of all MS1 EXO metabolome files in data folder
+MS1_EXO_files <- data.frame(list.files(input_dir, pattern = "EXO"))
+View(MS1_EXO_files)
+
+###------pre-processing----
+
+## create xcmsSet object 
+
+# for phenodata would make sense to add column with class name
+pdx <- data.frame(file = basename(paste(input_dir, MS1_EXO_files[,], sep = "")))
+pdx$class <- c("NA")
+
+# creating an xcmsSet object, including peak identification with given parameters
+# xcmsSet class does peak detection, peak grouping, nonlinear retention time correction
+# missing value imputation, can generate extracted ion chromatograms
+xsx <- xcmsSet(files = paste(input_dir, MS1_EXO_files[,], sep = ""), 
+              phenoData = pdx, 
+              method = "matchedFilter",
+              fwhm = 20, 
+              max = 50, 
+              snthresh = 4, 
+              step = 0.05,
+              BPPARAM = SnowParam(workers = 2))
+
+# Need to define sampclass to identify the different classes of data, eg Pp, Sm, CoCu
+# loop runs but doesn't add vector/name to correct file, names all of the the same
+
+#for (i in 1:length(phenoData(xsx))){
+#  if (grepl("1A|1b|2a|2b|3a|3b|4a|4b", phenoData(xsx)) == TRUE) {
+#     sampclass(xsx) <- c("Sm")
+#  } else if (grepl("5a|5b|6a|6b|7a|7b|8a|8b", phenoData(xsx)) == TRUE){
+#    sampclass(xsx) <- c("Pp")
+#  } else if (grepl("MB", phenoData(xsx)) == TRUE){
+#    sampclass(xsx) <- c("MB")
+#  } else {
+#    sampclass(xsx) <- c("CoCu")
+#  }
+#}
+
+# until loop runs for class naming in either xcmsSet or pd1, do it manuallly
+sampclass(xsx) <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
+                   rep(x = "Sm", times = 8), 
+                   rep(x = "Pp", times = 8),
+                   "CoCuSm", "CoCuPp", "MB")
+
+# summary of xcmsSet
+xsx
+
+# xs peak table
+xsx@peaks
+# better view
+View(xsx@peaks)
+
+# overview: plot a spectra
+# relative intensity and mz or rt
+plot(x = xsx@peaks[1:1928,"rt"], y = xsx@peaks[1:1928,"intf"], col=xsx@peaks[,"sample"])
+
+## peaks are now detected by matched filter function and listed in xs@peaks list
+## sample says which origin file/sample the peak comes from
+
+###----post-processing------
+## Assignment in groups, now peaks that represent the same metabolite need to be grouped together
+
+# peaks are grouped together to features according to m/z ranges and retention time
+# peak detection method was density
+xsgx <- group(object = xsx)
+
+# summary
+xsgx
+xsgx@groups[1:5, ]
+
+# rt correction using Loess filter
+xsgx <- retcor(object = xsgx)
+
+# re-grouping
+xsgx <- group(object = xsgx)
+xsgx@groups[1:5, ]
+
+
+## Missing value imputation
+# First test by outputting first values of dataset
+groupval(object = xsgx, value = "into")[1:5, 1:10]
+
+# now missing value imputation to remove NA values, check with groupval() for NA
+xsgfx <- fillPeaks(object = xsgx, BPPARAM = MulticoreParam(workers = 2))
+# groupval of xsgf feature list of the peaks grouped across the samples n = nrow(input_files)
+# the samples are the colums 
+groupval(object = xsgfx, value = "into")[1:5, 1:25]
+
+# Quality control of data to see major outliers or gaussian shape of distribution
+# save as picture
+plotQC(xsgfx, what = "mzdevhist")
+plotQC(xsgfx, what = "rtdevhist")
+
+
 resultsx <- groupval(xsgfx, "medret", "into")
 
 
@@ -140,9 +239,7 @@ resultsx <- groupval(xsgfx, "medret", "into")
 
 
 # Save results as .csv file 
-write.csv(results, file = "MS1_ENDO_results.csv", 
-          quote = TRUE, row.names = TRUE, col.names = TRUE)
-
+write.csv(results, file = "MS1_ENDO_results.csv") 
 write.csv(resultsx, file = "MS1_EXO_results.csv")
 
 
@@ -151,26 +248,35 @@ write.csv(peakTable(xsgf), file = "ENDO_peakTable.csv")
 write.csv(peakTable(xsgfx), file = "EXO_peakTable.csv")
 
 
+data.pca <- read.csv()
+data.pcax <- read.csv()
 
 ###----PCA----
 
 
 # get intensity values of peak groups 
 # same data as results table
+# either import from csv or recalculate
 data.pca <- groupval(object = xsgf, value = "into")
 # defines the symbols to be drawn in the plot
-symb <- c(rep(0, 6), rep(1, 8), rep(2, 8), rep(0, 2), rep(3, 1))
+symb <- c(rep(0,1), rep(1,2), rep(0,2), rep(1,1), 
+          rep(2,8), rep(3,8), 
+          rep(1,1), rep(0,1))
 # execute PCA with scaled data
 pc <- prcomp(x = t(na.omit(data.pca)), scale. = T)
 
 # define colors for classes
-CoCu <- rep("royalblue4", 6)
+CoCuPp1 <- ("royalblue4")
+CoCuSm1 <- rep("darksalmon", 2)
+CoCuPp2 <- rep("royalblue4", 2)
+CoCuSm2 <- ("darksalmon")
 Sm <- rep("violetred", 8)
 Pp <- rep("yellow2", 8)
-CoCu1 <- rep("royalblue4", 2)
+CoCuSm3 <- ("darksalmon")
+CoCuPp3 <- ("royalblue4")
 MB <- rep("springgreen", 1)
 
-col <- c(CoCu, Sm, Pp, CoCu1, MB)
+col <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB)
 
 # check loadings and score data
 scree.data <- as.data.frame(pc$importance)
@@ -191,6 +297,32 @@ abline(h = 0, v = 0, col = "black")
 legend("topleft", col = unique(col), legend = levels(sampclass(xsgf)), 
        pch = unique(symb))
 dev.off()
+
+###----Significance of features----
+
+# using a diffreport to show the biggest differences between groups
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
