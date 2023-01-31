@@ -251,7 +251,7 @@ write.csv(peakTable(xsgfx), file = "EXO_peakTable.csv")
 # ENDO: re-import data from results.csv file for statistical analysis
 data.pca <- read.csv("MS1_ENDO_results.csv")
 
-# identify duplicated value and rename 
+# identify duplicated values and rename 
 dup <- anyDuplicated(data.pca[,1])
 data.pca[dup,1] <- paste(data.pca[dup,1], "x", sep = "")
 
@@ -266,9 +266,9 @@ colnames(data.pca) <- seq.int(1, 25)
 # EXO: re-import data from results.csv
 data.pcax <- read.csv("MS1_EXO_results.csv")
 
-# identify duplicated value and rename 
-dup <- anyDuplicated(data.pcax[,1])
-data.pcax[dup,1] <- paste(data.pcax[dup,1], "x", sep = "")
+# identify duplicated values and rename 
+dupx <- anyDuplicated(data.pcax[,1])
+data.pcax[dupx,1] <- paste(data.pcax[dupx,1], "x", sep = "")
 
 # set first row as rownames
 # subset without first row
@@ -285,7 +285,7 @@ colnames(data.pcax) <- seq.int(1, 25)
 # get intensity values of peak groups 
 # same data as results table
 # either import from csv or recalculate
-data.pca <- groupval(object = xsgf, value = "into")
+data.pca <- groupval(object = xsgfx, value = "into")
 # defines the symbols to be drawn in the plot
 symb <- c(rep(0,1), rep(1,2), rep(0,2), rep(1,1), 
           rep(2,8), rep(3,8), 
@@ -314,7 +314,7 @@ loadings.data <- as.data.frame(pc$rotation)
 # collect results for Plot
 pcSummary <- summary(pc)
 
-pdf("PCA_ENDO.pdf")
+png("PCA_EXO.png", width=10, height=6, units="in", res=100)
 plot(x = -1*pc$x[, 1], y = pc$x[,2], pch = symb, main = "PCA: S. marinoi, P. parvum, Co-Culture", 
      xlab = paste0("PC1: ", format(pcSummary$importance[2, 1] * 100,
                                    digits = 3), " % variance"),
@@ -322,14 +322,39 @@ plot(x = -1*pc$x[, 1], y = pc$x[,2], pch = symb, main = "PCA: S. marinoi, P. par
                                    digits = 3), " % variance"),
      col = col, bg = col, cex = 1.5, xlim = c(-40, 40), ylim = c(-40, 40))
 abline(h = 0, v = 0, col = "black")
-legend("topleft", col = unique(col), legend = levels(sampclass(xsgf)), 
+legend("topright", col = unique(col), legend = levels(sampclass(xsgf)), 
        pch = unique(symb))
 dev.off()
 
 ###----Significance of features----
 
-# using a diffreport to show the biggest differences between groups
+# perform broken stick test to evaluate which components are statistically important
+# modified after this code https://github.com/mohanwugupta/Machine-Learning-Neuroimaging-Tutuorial/blob/master/Broken_Stick.R
 
+
+png("BrokenStick_EXO.png", width=10, height=6, units="in", res=100)
+evplot = function(ev) {  
+  # Broken stick model (MacArthur 1957)  
+  n = length(ev)  
+  bsm = data.frame(j=seq(1:n), p=0)  
+  bsm$p[1] = 1/n  
+  for (i in 2:n) bsm$p[i] = bsm$p[i-1] + (1/(n + 1 - i))  
+  bsm$p = 100*bsm$p/n  
+  # Plot eigenvalues and % of variation for each axis  
+  op = par(mfrow=c(2,1),omi=c(0.1,0.3,0.1,0.1), mar=c(1, 1, 1, 1))  
+  barplot(ev, main="Eigenvalues EXO", col="blue", las=2)  
+  abline(h=mean(ev), col="red")  
+  legend("topright", "Average eigenvalue", lwd=1, col=2, bty="n")  
+  barplot(t(cbind(100*ev/sum(ev), bsm$p[n:1])), beside=TRUE,   
+          main="% variation", col=c("blue",2), las=2)  
+  legend("topright", c("% eigenvalue", "Broken stick model"),   
+         pch=15, col=c("blue",2), bty="n")  
+  par(op)  
+} 
+
+ev_pc = pc$sdev^2  
+evplot(ev_pc)  
+dev.off()
 
 
 
