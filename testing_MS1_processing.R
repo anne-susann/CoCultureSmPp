@@ -16,6 +16,7 @@ library(pheatmap)
 library(SummarizedExperiment)
 library(knitr)
 library(ggplot2)
+library(vegan)
 
 ## ------parallelization----
 
@@ -293,9 +294,9 @@ dev.off()
 # read groupval results in, no need for new calculations
 # for statistical analysis just import results file to not repeat calculations
 t <- read.csv(file = "MS1_ENDO_results.csv")
-rnam <- c(resultsx$X)
-resultsx <- resultsx[, -1]
-rownames(resultsx, do.NULL = TRUE, prefix = rnam)
+rnam <- c(ENDO$X)
+resultsx <- ENDO[, -1]
+rownames(ENDO, do.NULL = TRUE, prefix = rnam)
 
 resultsx <- read.table(file = "MS1_EXO_resultsx.txt", 
                        header = TRUE, sep = "\t", dec = ".", fill = FALSE,
@@ -337,9 +338,21 @@ chr_endo <- chromatogram(xsgf) # not possible
 
 xset <- as(xsgf, "XCMSnExp") # not possible
 
+# problem with importing data before was a duplicated rt/mz value
+# could not be set as row because double name
 
+ENDO_1 <- read.csv("MS1_ENDO_results_test.csv")
 
+# identify duplicated value and rename 
+dup <- anyDuplicated(ENDO_1[,1])
+ENDO_1[dup,1] <- paste(ENDO_1[dup,1], "x", sep = "")
 
+# set first row as rownames
+# subset without first row
+# set column names to numbers 1-25
+rownames(ENDO_1) <- ENDO_1[,1]
+ENDO_1 <- ENDO_1[, -1]
+colnames(ENDO_1) <- seq.int(1, 25)
 
 
 
@@ -496,6 +509,138 @@ abline(h = 0, v = 0, col = "black")
 legend("topleft", col = unique(col), legend = levels(sampclass(xsgf)), 
        pch = unique(symb))
 dev.off()
+
+
+
+###----Significance of features----
+
+# using a diffreport to show the biggest differences between two groups
+# Creation of the diffreport regarding control vs. group 1 
+# and additional saving in diffreport_XCMS.tsv
+dr <- diffreport(object = xsgf, class1 = "Sm", class2 = "CoCu", 
+                 filebase = "diffreport_XCMS", sortpval = FALSE)
+
+BiocManager::install("multtest")
+
+# first 10 significant values 
+pval<- dr$pvalue(which(dr$pvalue < 0.05))
+pval [1:10]
+
+# 10 most significant features
+drpv<- dr[order(dr$pvalue,decreasing = FALSE) , ]
+drpv[1:10,]
+
+## diffreport
+dr <- diffreport(object = xsgfx, class1 = "Pp", class2 = "CoCuPp", 
+                 filebase = "diffreport_XCMS", sortpval = FALSE)
+
+# check for signifantly different features
+sigxPp <- which(dr$pvalue<=0.05)
+length(sigPp) # Pp against Co-culture
+length(sigSm) # Sm against Co-culture
+length(sigSP) # Pp against Sm
+
+length(sigxPp)
+
+
+## perform broken stick test to evaluate which components are statistically important
+
+png("BrokenStick_EXO.png", width=10, height=6, units="in", res=100)
+evplot = function(ev) {  
+  # Broken stick model (MacArthur 1957)  
+  n = length(ev)  
+  bsm = data.frame(j=seq(1:n), p=0)  
+  bsm$p[1] = 1/n  
+  for (i in 2:n) bsm$p[i] = bsm$p[i-1] + (1/(n + 1 - i))  
+  bsm$p = 100*bsm$p/n  
+  # Plot eigenvalues and % of variation for each axis  
+  op = par(mfrow=c(2,1),omi=c(0.1,0.3,0.1,0.1), mar=c(1, 1, 1, 1))  
+  barplot(ev, main="Eigenvalues EXO", col="blue", las=2)  
+  abline(h=mean(ev), col="red")  
+  legend("topright", "Average eigenvalue", lwd=1, col=2, bty="n")  
+  barplot(t(cbind(100*ev/sum(ev), bsm$p[n:1])), beside=TRUE,   
+          main="% variation", col=c("blue",2), las=2)  
+  legend("topright", c("% eigenvalue", "Broken stick model"),   
+         pch=15, col=c("blue",2), bty="n")  
+  par(op)  
+} 
+
+ev_pc = pc$sdev^2  
+evplot(ev_pc)  
+dev.off()
+
+# --> works, 3 PCs seem to be statistically relevant
+# pc$sdev is the standard 
+
+
+# broken stick determine statistically relevant pcs
+brokenStick()
+
+library(PCDimension)
+AuerGervini(pc$sdev, dd=NULL, epsilon = 2e-16)
+
+brokenStick(pc$sdev[1:25], length(pc$sdev))
+# bad values error??
+
+
+## varpart
+var_pc <- vegan::varpart(pc)
+
+data(mite)
+data(mite.env)
+data(mite.pcnm)
+
+## See detailed documentation:
+vegandocs("partition")
+
+# Two explanatory matrices -- Hellinger-transform Y
+# Formula shortcut "~ ." means: use all variables in 'data'.
+mod <- varpart(mite, ~ ., mite.pcnm, data=mite.env, transfo="hel")
+mod
+showvarparts(2)
+plot(mod)
+# Alterna
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## random forest
+library(randomForest)
+str(data.pcax)
+
+data <- data.pcax
+
+
+set.seed(222)
+ind <- sample(2, nrow(data.pcax), replace = TRUE, prob = c(0.7, 0.3))
+train <- data.pcax[ind==1,]
+test <- data.pcax[ind==2,]
+
+rf <- randomForest(data.pcax$`3`~., data=train, proximity=TRUE) 
+print(rf)
+#Call:
+#  randomForest(formula = Species ~ ., data = train)
+#Type of random forest: classification
+#Number of trees: 500
+#No. of variables tried at each split: 2
+#OOB estimate of  error rate: 2.83%
+
+
+
+
+
+
+
 
 
 
