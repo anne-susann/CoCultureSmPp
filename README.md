@@ -10,3 +10,8 @@ Eventually include more thorough statistical analysis and run automatically
 
 testing_MS1_processing.R: 
 My personal notes for code ideas to be implemented in MS1_processing
+
+
+
+MS1_MS2_precursor.R:
+Find the MS2 precursor mass in the MS1 data by following the iESTIMATE code of ipb-halle
