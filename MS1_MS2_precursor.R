@@ -71,13 +71,13 @@ MS2_EXO_files <- data.frame(subset(MS2_files, grepl("EXO", MS2_files[,1]), drop 
 
 ###----MS1 preparations----
 # MS1 variables
-pol <- substr(x=polarity, start=1, stop=3)
+# pol <- substr(x = polarity, start = 1, stop = 3)
 ppm <- 35
 ms1_intensity_cutoff <- 100	          #approx. 0.01%
 
 # General variables
-#mzml_files_neg <- NULL
-#mzml_names_neg <- NULL
+# mzml_files_ENDO <- NULL
+# mzml_names_neg <- NULL
 mzml_times_ENDO <- NULL
 
 
@@ -87,7 +87,7 @@ mzml_times_ENDO <- NULL
 # iESTIMATE code as inspiration (IPB Halle, github)
 # https://github.com/ipb-halle/iESTIMATE/blob/main/use-cases/radula-hormones/peak_detection_neg.r
 
-# create vector with sample classes
+# create vector with sample classes according to culture information sheet
 samp_groups <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
                    rep(x = "Sm", times = 8), 
                    rep(x = "Pp", times = 8),
@@ -112,29 +112,30 @@ pheno_col_ENDO <- data.frame(col)
 pheno_col_samples_ENDO <- data.frame(cbind(pheno_col_ENDO$col, pheno_data_ENDO$sample_group))
 
 # Save timestamps of samples
+# doesn't run
 for (i in 1:length(MS1_ENDO_files_full)) {
-  fl <- mzR::openMSfile(MS1_ENDO_files_full[i])
-  run_info <- mzR::runInfo(fl)
-  mzR::close(fl)
-  mzml_times_ENDO <- c(mzml_times_ENDO, run_info$startTimeStamp)
+      fl <- mzR::openMSfile(MS1_ENDO_files_full[i])
+      run_info <- mzR::runInfo(fl)
+      mzR::close(fl)
+      mzml_times_ENDO <- c(mzml_times_ENDO, run_info$startTimeStamp)
 }
 
 
-# Display MSn levels
+# Display MSn levels and check amount of spectra
 mzml_msn_ENDO <- NULL
 for (i in 1:length(MS1_ENDO_files_full)) {
-  mzml_data_ENDO <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[i], sep = ""), mode="onDisk")
+  mzml_data_ENDO <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[,i], sep = ""), mode="onDisk")
   mzml_msn_ENDO <- rbind(mzml_msn_ENDO, t(as.matrix(table(msLevel(mzml_data_ENDO)))))
 }
-colnames(mzml_msn_ENDO) <- c("MS1", "MS2")
+colnames(mzml_msn_ENDO) <- c("MSn 0", "MSn 1")
 rownames(mzml_msn_ENDO) <- mzml_names_ENDO
 
-# Plot MSn levels
+# Plot MSn levels (only if MS1 and MS2 data are in same directory/file, then exchange MSn 0 for MS1 and MS2)
 pdf(file="plots/ENDOMS1_msn_levels.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=16, family="Helvetica")
-par(mfrow=c(2,1), mar=c(16,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.8)
+par(mfrow=c(2,1), mar=c(5,4,4,2), oma=c(0,0,0,0), cex.axis=0.9, cex=0.8)
 boxplot(mzml_msn_ENDO, main="Number of spectra")
 
-model_boxplot <- boxplot(t(mzml_msn_ENDO[,2]), main="Number of MS2 spectra per sample", xaxt="n")
+model_boxplot <- boxplot(t(mzml_msn_ENDO[,2]), main="Number of MS1 spectra per sample", xaxt="n")
 tick <- seq_along(model_boxplot$names)
 axis(1, at=tick, labels=F)
 text(tick, par("usr")[3]-par("usr")[3]/10, model_boxplot$names, adj=0, srt=270, xpd=T)
@@ -144,22 +145,21 @@ dev.off()
 
 ###----Import raw data----
 
-# Import raw data as MSnbase object OnDiskMsnExp
+# Import raw data as MSnbase object OnDiskMsnExp, segement for msLevel = 1
 msd <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[,], sep = ""), 
                   pdata = new("NAnnotatedDataFrame",pheno_data_ENDO), 
+                  msLevel = 1,
                   mode = "onDisk")
 
-# Also try importing as XCMSnExp object
+# Import as XCMSnExp object for visual analysis
 msd_XCMS <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[,], sep = ""), 
                   pdata = new("NAnnotatedDataFrame",pheno_data_ENDO),
                   msLevel = 1)
-# why are there so many less elements in this object?? --> msLevel(0) is not inculded
-# can be exluded, no sensible infomation in this area
 
 table(msLevel(msd))
-head(fData(msd)[, c("isolationWindowTargetMZ", "isolationWindowLowerOffset",
-                             "isolationWindowUpperOffset", "msLevel", "retentionTime")])
-write.csv(fData(msd), file="ENDO_raw_data.csv", row.names=FALSE)
+head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
+                             "originalPeaksCount", "msLevel", "retentionTime")])
+write.csv(fData(msd), file="ENDO_raw_data_1.csv", row.names=FALSE)
 
 # Restrict data to 1020 seconds (17 minutes)
 msd <- filterRt(msd, c(0, 1020))
@@ -176,57 +176,60 @@ chromas_ENDO <- chromatogram(msd_XCMS,
                              aggregationFun="max", 
                              BPPARAM = SnowParam(workers = 2))
 
-# worked with XCMSnExp object
 
 # Plot chromatograms based on phenodata groups
 pdf(file="ENDO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
 plot(chromas_ENDO, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = col)
-legend("topleft", bty="n", pt.cex=0.5, cex=0.7, y.intersp=0.7, text.width=0.5, pch=20, col=pheno_col_samples_ENDO[,1], legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
+legend("topleft", bty="n", pt.cex=2, cex=1,5, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(col), legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
 dev.off()
 
 
 
 # ############################## MS2 ##############################
 
+### ---- ENDO -----
+
 inclusion_list <- read.table(paste(input_dir_MS2, str_remove("/KSS_210324_ENDO.txt", "."), sep = ""), 
                              header = TRUE, sep = "\t", dec = ".", fill = TRUE)
-inc_list <- data.frame(inclusion_list$Mass..m.z., inclusion_list$CS..z., 
+inc_list_ENDO <- data.frame(inclusion_list$Mass..m.z., inclusion_list$CS..z., 
                        inclusion_list$Polarity, inclusion_list$Start..min., 
                        inclusion_list$End..min.)
-colnames(inc_list) <- c("mz", "CS", "polarity", "start_sec", "end_sec")
+colnames(inc_list_ENDO) <- c("mz", "CS", "polarity", "start_sec", "end_sec")
 
+# convert retention time from minutes to seconds
+inc_list_ENDO$start_sec <- inc_list_ENDO$start_sec*60
+inc_list_ENDO$end_sec <- inc_list_ENDO$end_sec*60
 
 # ---------- MS2 spectra detection ----------
 # Estimate precursor intensity
 # ms1_data_neg is feature table, try with feature table from xcmsSet
 # when take MS2 data??? not here for estimating precursor insensity?
-# maybe create new XCMSnExp object for MS2 data
-msd_XCMS_MS2 <- readMSData(files = paste(input_dir_MS2, MS2_ENDO_files[,], sep = ""), 
-                       pdata = NULL,
-                       msLevel = 2)
+# maybe create new XCMSnExp object for MS2 data later
 
-# check for msLevel
-table(msLevel(msd_XCMS_MS2))
-head(fvarMetadata(msd_XCMS_MS2)[, c("isolationWindowTargetMZ", "isolationWindowLowerOffset",
-                    "isolationWindowUpperOffset", "msLevel", "retentionTime")])
-write.csv(fData(msd_XCMS_MS2), file="ENDO_raw_data_MS2.csv", row.names=FALSE)
+#msd_XCMS_MS2 <- readMSData(files = paste(input_dir_MS2, MS2_ENDO_files[,], sep = ""), 
+#                       pdata = NULL,
+#                       msLevel = 2)
 
 
-# no data in csv file for XCMSnExp object
-# check for OnDiskMsnExp
-msd_MS2 <- readMSData(files = paste(input_dir_MS2, MS2_ENDO_files[,], sep = ""), 
+# first OnDiskMsnExp object, like with MS1 data subset for msLevel = 2
+mzml_data_ENDO_MS2 <- readMSData(files = paste(input_dir_MS2, MS2_ENDO_files[,], sep = ""), 
                   pdata = NULL, 
                   mode = "onDisk")
-msd_MS2_2 <- readMSData(files = paste(input_dir_MS2, MS2_ENDO_files[,], sep = ""), 
+
+msd_MS2 <- readMSData(files = paste(input_dir_MS2, MS2_ENDO_files[,], sep = ""), 
                       pdata = NULL, 
                       msLevel = 2,
                       mode = "onDisk")
+
 # check for msLevel
-table(msLevel(msd_MS2_2))
-head(fData(msd_MS2_2)[, c("isolationWindowTargetMZ", "isolationWindowLowerOffset",
-                                    "isolationWindowUpperOffset", "msLevel", "retentionTime")])
-write.csv(fData(msd_MS2), file="ENDO_raw_data_MS2_2.csv", row.names=FALSE)
+table(msLevel(mzml_data_ENDO_MS2))
+table(msLevel(msd_MS2))
+head(fData(msd_MS2)[, c("precursorMZ", "precursorCharge", "precursorIntensity",
+                         "precursorScanNum", "originalPeaksCount",
+                        "scanWindowLowerLimit", "scanWindowUpperLimit", "msLevel", "retentionTime")])
+write.csv(fData(msd_MS2), file="ENDO_raw_data_MS2.csv", row.names=FALSE)
 
 
 
