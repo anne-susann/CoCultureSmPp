@@ -48,6 +48,14 @@ input_dir_MS2
 files_MS1 <- list.files(input_dir_MS1)
 files_MS2 <- list.files(input_dir_MS2)
 
+# create plot directory
+if (dir.exists(paste(getwd(), "/plots/", sep = ""))){
+  print("plots directory already exists")
+  start_time <- Sys.time()
+}  else{
+  dir.create("plots")
+  start_time <- Sys.time()
+}
 
 ###----ENDO files----
 MS1_ENDO_files <- data.frame(list.files(input_dir_MS1, pattern = "ENDO"))
@@ -171,19 +179,111 @@ print(length(msd_mz))
 
 # Get base peak chromatograms
 register(bpstart(SnowParam()))
-# register(SerialParam())
+
 chromas_ENDO <- chromatogram(msd_XCMS, 
                              aggregationFun="max", 
                              BPPARAM = SnowParam(workers = 2))
 
 
 # Plot chromatograms based on phenodata groups
-pdf(file="ENDO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
+pdf(file="plots/ENDO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
 plot(chromas_ENDO, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = col)
 legend("topleft", bty="n", pt.cex=2, cex=1,5, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(col), legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
 dev.off()
+
+# Get TICs
+pdf(file="plots/ENDO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
+jpeg(filename = "ENDO_tics.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(5,4,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=0.4, cex.lab=2, cex.main=2)
+tics_ENDO <- split(tic(msd), f=fromFile(msd))
+boxplot(tics_ENDO, col=col, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
+legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(col), legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
+dev.off()
+
+
+### ---- pre-processing ----
+
+# grouping/binning for peak detection, based on similarity of the base peak chromatogram 
+chromas_bin_ENDO <- MSnbase::bin(chromas_ENDO, binSize=2)
+chromas_bin_cor_ENDO <- cor(log2(do.call(cbind, lapply(chromas_bin_ENDO, intensity))))
+colnames(chromas_bin_cor_ENDO) <- rownames(chromas_bin_cor_ENDO) <- msd$sample_name
+
+# representing the data in a heatmap for general overview
+pdf(file="plots/heatmap_chromas_bin_ENDO.pdf", encoding="ISOLatin1", pointsize=10, width=6, 
+    height=4, family="Helvetica")
+jpeg(filename = "plots/heatmap_chromas_bin_ENDO.jpeg", width = 500, height = 500, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+heatmap(chromas_bin_cor_ENDO)
+dev.off()
+
+# Assess retention times and intensities of first file
+head(rtime(chromas_ENDO[1, 1]))
+head(intensity(chromas_ENDO[1, 1]))
+
+# Inspect peak width of standard compound for defining base peakwidth parameter below
+# standards stated here are from iESTIMATE project
+# check for own standard compounds that are present in dataset 
+# to set ppm parameter for subsequent peak detection parameters check maximal mz difference of data points from neighboring scans/spectra
+register(bpstart(SnowParam()))
+pdf(file="plots/ENDO_chromas_standard_peakwidth_XCMS.pdf", encoding="ISOLatin1", 
+    pointsize=10, width=6, height=4, family="Helvetica")
+par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+plot(chromatogram(msd_XCMS, mz=c(282, 285), rt=c(545, 555)), col=col, main = "EIC of Biochanin A")
+plot(chromatogram(msd, mz=c(244, 247), rt=c(335, 350)), col=col, main = "EIC of N-(3-Indolylacetyl)-L-Ala")
+plot(chromatogram(msd, mz=c(294, 297), rt=c(585, 600)), col=col, main = "EIC of Radulanin L")
+plot(chromatogram(msd, mz=c(147, 151), rt=c(324, 340)), col=col, main = "EIC of Methionin", BPPARAM = SnowParam(workers = 2))
+dev.off()
+# first run worked with msd, now neither msd nor msd_XCMS
+# with BPPARAM it works, not very well but works with both objects
+
+
+# Peak detection in MS1 data
+head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
+table(polarity(msd))
+
+# polarity = 0 is negative mode, but distinction here not possible in this way 
+# for iESTIMATE, subset data only contains negative data, here neg and pos alternating in data
+#if (polarity(msd)==0) {
+#  ms1_params_ENDO <- CentWaveParam(ppm=13, mzCenterFun="mean", peakwidth=c(4, 33), prefilter=c(4, 200), 
+#                                  mzdiff=0.0023, snthresh=11, noise=0, integrate=1,
+#                                  firstBaselineCheck=TRUE, verboseColumns=TRUE, fitgauss=FALSE, 
+#                                  roiList=list(), roiScales=numeric())
+#} else {
+#  ms1_params_ENDO <- CentWaveParam(ppm=32, mzCenterFun="mean", peakwidth=c(4, 32), prefilter=c(2, 100), 
+#                                  mzdiff=0.0111, snthresh=8, noise=0, integrate=1,
+#                                  firstBaselineCheck=TRUE, verboseColumns=FALSE, fitgauss=FALSE, 
+#                                  roiList=list(), roiScales=numeric())
+#}
+
+ms1_params_ENDO <- CentWaveParam(ppm=13, mzCenterFun="mean", peakwidth=c(4, 33), prefilter=c(4, 200), 
+                                  mzdiff=0.0023, snthresh=11, noise=0, integrate=1,
+                                  firstBaselineCheck=TRUE, verboseColumns=TRUE, fitgauss=FALSE, 
+                                  roiList=list(), roiScales=numeric())
+
+ms1_data_ENDO <- findChromPeaks(msd, param=ms1_params_ENDO)
+ms1_data_ENDO_default <- findChromPeaks(msd, param = CentWaveParam(snthresh = 2))
+
+
+
+
+# Per file summary
+ms1_summary_neg <- lapply(split.data.frame(chromPeaks(ms1_data_neg), f=chromPeaks(ms1_data_neg)[, "sample"]), FUN=function(z) { c(peak_count=nrow(z), rt=quantile(z[, "rtmax"] - z[, "rtmin"])) } )
+ms1_summary_neg <- do.call(rbind, ms1_summary_neg)
+rownames(ms1_summary_neg) <- basename(fileNames(ms1_data_neg))
+print(ms1_summary_neg)
+table(msLevel(ms1_data_neg))
+write.csv(as.data.frame(table(msLevel(ms1_data_neg))), file="data/neg_ms1_data.csv", row.names=FALSE)
+
+# To get a global overview of the peak detection we can plot the frequency of identified peaks per file along the retention time axis. This allows to identify time periods along the MS run in which a higher number of peaks was identified and evaluate whether this is consistent across files.
+pdf(file="plots/neg_ms1_data.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
+par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+plotChromPeakImage(ms1_data_neg, main="Frequency of identified peaks per RT")
+dev.off()
+
+
 
 
 
@@ -229,22 +329,12 @@ table(msLevel(msd_MS2))
 head(fData(msd_MS2)[, c("precursorMZ", "precursorCharge", "precursorIntensity",
                          "precursorScanNum", "originalPeaksCount",
                         "scanWindowLowerLimit", "scanWindowUpperLimit", "msLevel", "retentionTime")])
+
+# save fData of MS2 spectra
 write.csv(fData(msd_MS2), file="ENDO_raw_data_MS2.csv", row.names=FALSE)
 
 
-
-# normal script from here on
-precursor_intensity_ENDO <- estimatePrecursorIntensity(msd_MS2_2, method = "interpolation", 
-                                                       BPPARAM = SnowParam(workers = 2))
-print(head(na.omit(precursor_intensity_ENDO)))
-# has only NAs??
-
-
-# Reconstruct MS2 spectra from MS1 data
-ms2_data_ENDO <- chromPeakSpectra(msd_XCMS_MS2, msLevel=2L, return.type="Spectra")
-print(ms2_data_ENDO)
-print(length(ms2_data_ENDO$peak_id))
-
+### not yet executed
 # Extract all usable MS2 spectra
 ms2_spectra_ENDO <- list()
 #for (i in 1:nrow(ms1_def_neg)) {
@@ -256,7 +346,9 @@ ms2_spectra_neg <- foreach(i=1:nrow(ms1_def_neg)) %dopar% {
     spectra_of_interest <- ms2_data_neg[ms2_data_neg$peak_id %in% rownames(peaks_of_interest)]
     combined_spectra_of_interest <- filterIntensity(spectra_of_interest, intensity=c(1,Inf), backend=MsBackendDataFrame)
     combined_spectra_of_interest <- setBackend(combined_spectra_of_interest, backend=MsBackendDataFrame())
-    combined_spectra_of_interest <- Spectra::combineSpectra(combined_spectra_of_interest, FUN=combinePeaks, ppm=ppm, peaks="union", minProp=0.8, intensityFun=median, mzFun=median, backend=MsBackendDataFrame)#f=rownames(peaks_of_interest))
+    combined_spectra_of_interest <- Spectra::combineSpectra(combined_spectra_of_interest, 
+                                                            FUN=combinePeaks, ppm=ppm, peaks="union", minProp=0.8, intensityFun=median, 
+                                                            mzFun=median, backend=MsBackendDataFrame)#f=rownames(peaks_of_interest))
     combined_spectra_peaks <- as.data.frame(peaksData(combined_spectra_of_interest)[[1]])
     #Spectra::plotSpectra(combined_spectra_of_interest)
     #plot(x=combined_spectra_peaks[,1], y=combined_spectra_peaks[,2], type="h", xlab="m/z", ylab="intensity", main=paste("Precursor m/z",combined_spectra_of_interest@backend@spectraData$precursorMz[[1]]))
@@ -266,16 +358,22 @@ ms2_spectra_neg <- foreach(i=1:nrow(ms1_def_neg)) %dopar% {
     return(combined_spectra_of_interest)
   }
 }
+###
 
 # Remove empty spectra
-names(ms2_spectra_neg) <- rownames(ms1_def_neg)
-ms2_spectra_neg <- ms2_spectra_neg[lengths(ms2_spectra_neg) != 0]
+# names(ms2_spectra_neg) <- rownames(ms1_def_neg)
+msd_MS2 <- msd_MS2[lengths(msd_MS2) != 0]
 
 
 ###----Link MS2 and MS1-----
 
 # Relate all MS2 spectra to MS1 precursors
 ms1_def_neg$has_ms2 <- as.integer(rownames(ms1_def_neg) %in% names(ms2_spectra_neg))
+
+
+# Take data from peaks table for MS1, or potentially data from ENDO_raw_data.csv/table is enough
+# for MS2 data, ENDO_raw_data_MS2_2.csv/table generated from msd_MS2 object fData is the necessary information
+# contain the precursorMz info and sample/scan/file names --> link should be possible
 
 
 
