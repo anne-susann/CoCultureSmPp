@@ -639,7 +639,14 @@ print(rf)
 
 
 
+###----diversity shannon-----
 
+# feature list
+View(data.pca)
+# model_div_ENDO <- data.frame(rownames(data.pca))
+model_div_ENDO <- data.pca
+# shannon diversity index
+model_div_ENDO$shannon <- apply(X=data.pca, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
 
 
 

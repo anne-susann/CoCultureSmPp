@@ -314,7 +314,7 @@ loadings.data <- as.data.frame(pc$rotation)
 # collect results for Plot
 pcSummary <- summary(pc)
 
-png("PCA_EXO.png", width=10, height=6, units="in", res=100)
+png("PCA_ENDO.png", width=10, height=6, units="in", res=100)
 plot(x = -1*pc$x[, 1], y = pc$x[,2], pch = symb, main = "PCA: S. marinoi, P. parvum, Co-Culture", 
      xlab = paste0("PC1: ", format(pcSummary$importance[2, 1] * 100,
                                    digits = 3), " % variance"),
@@ -332,7 +332,7 @@ dev.off()
 # modified after this code https://github.com/mohanwugupta/Machine-Learning-Neuroimaging-Tutuorial/blob/master/Broken_Stick.R
 
 
-png("BrokenStick_EXO.png", width=10, height=6, units="in", res=100)
+png("BrokenStick_ENDO.png", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -342,7 +342,7 @@ evplot = function(ev) {
   bsm$p = 100*bsm$p/n  
   # Plot eigenvalues and % of variation for each axis  
   op = par(mfrow=c(2,1),omi=c(0.1,0.3,0.1,0.1), mar=c(1, 1, 1, 1))  
-  barplot(ev, main="Eigenvalues EXO", col="blue", las=2)  
+  barplot(ev, main="Eigenvalues ENDO", col="blue", las=2)  
   abline(h=mean(ev), col="red")  
   legend("topright", "Average eigenvalue", lwd=1, col=2, bty="n")  
   barplot(t(cbind(100*ev/sum(ev), bsm$p[n:1])), beside=TRUE,   
@@ -357,6 +357,12 @@ evplot(ev_pc)
 dev.off()
 
 
+
+###----other analysis----
+# model_div_ENDO <- data.frame(rownames(data.pca))
+model_div_ENDO <- data.pca
+# shannon diversity index
+model_div_ENDO$shannon <- apply(X=data.pca, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
 
 
 
