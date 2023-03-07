@@ -36,6 +36,7 @@ if (.Platform$OS.type == "unix") {
 
 
 ########## set directory and list files #######
+getwd()
 
 # set data directory for MS1 data files
 input_dir_MS1 <- paste(getwd(), "/MS1/", sep = "")
@@ -104,12 +105,15 @@ mzml_times_ENDO <- NULL
 # https://github.com/ipb-halle/iESTIMATE/blob/main/use-cases/radula-hormones/peak_detection_neg.r
 
 # Analysis of MS1 ENDO data only from here on
+# color order is determined by order in MS1_ENDO_files and then per species
 
 # create vector with sample classes according to culture information sheet
 samp_groups <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
                    rep(x = "Sm", times = 8), 
                    rep(x = "Pp", times = 8),
-                   "CoCuSm", "CoCuPp", "MB", )
+                   "CoCuSm", "CoCuPp", "MB")
+
+samp_groups_1 <- c(samp_groups, samp_groups)
 
 # create vector with colors 
 CoCuPp1 <- ("royalblue4")
@@ -123,6 +127,8 @@ CoCuPp3 <- ("royalblue4")
 MB <- rep("springgreen", 1)
 
 col <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB)
+
+col_1 <- c(col, col)
 
 # create phenodata based on culture type
 pheno_data_ENDO <- data.frame(sample_name = MS1_ENDO_names, sample_group = samp_groups)
@@ -158,6 +164,103 @@ tick <- seq_along(model_boxplot$names)
 axis(1, at=tick, labels=F)
 text(tick, par("usr")[3]-par("usr")[3]/10, model_boxplot$names, adj=0, srt=270, xpd=T)
 dev.off()
+
+###----divide data into negative and positive files----
+
+## for manual file per file separation
+# ENDO 1A as example
+
+# create reuslt directory
+if (dir.exists(paste(getwd(), "/raw_data/", sep = ""))){
+  raw_data_dir <- paste(getwd(), "/raw_data/", sep = "")
+}  else{
+  dir.create("raw_data")
+  raw_data_dir <- paste(getwd(), "/raw_data/", sep = "")
+}
+
+# import data
+sps <- Spectra(paste(input_dir_MS1, "KSS_210324_ENDO_1A.mzML", sep = ""), source = MsBackendMzR())
+
+# set polarity to negative = 0 or positive = 1
+sps_neg <- sps[sps$polarity==0]
+sps_pos <- sps[sps$polarity==1] 
+
+# check polarities
+table(polarity(sps))
+table(polarity(sps_neg))
+table(polarity(sps_pos))
+
+
+# export data in separate files for neg and pos
+export(sps_neg, backend = MsBackendMzR(), file = paste(raw_data_dir, "coculture_ENDO_neg_1A.mzML", sep = ""))
+export(sps_pos, backend = MsBackendMzR(), file = paste(raw_data_dir, "coculture_ENDO_pos_1A.mzML", sep = ""))
+
+
+### for automated separation for ENDO FILES
+for (i in 1:nrow(MS1_ENDO_files)){
+  sps <- Spectra(paste(input_dir_MS1, MS1_ENDO_files[i,1], sep = ""), source = MsBackendMzR())
+
+  # set polarity to negative = 0 or positive = 1
+  sps_neg <- sps[sps$polarity==0]
+  sps_pos <- sps[sps$polarity==1] 
+
+# check polarities
+#table(polarity(sps))
+#table(polarity(sps_neg))
+#table(polarity(sps_pos))
+
+
+  # export data in separate files for neg and pos
+  export(sps_neg, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_neg", MS1_ENDO_files[i,1]),
+                                                         sep = ""))
+  export(sps_pos, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_pos", MS1_ENDO_files[i,1]), 
+                                                         sep = ""))
+}
+
+raw_data_MS1_ENDO <- data.frame(list.files(raw_data_dir, pattern = "ENDO"))
+raw_data_MS1_ENDO_neg <- data.frame(subset(raw_data_MS1_ENDO, grepl("neg", raw_data_MS1_ENDO[,1]), drop = TRUE))
+sps_test <- Spectra(paste(raw_data_dir, raw_data_MS1_ENDO[1,1], sep = ""), source = MsBackendMzR())
+sps_test
+table(polarity(sps_test))
+
+
+# test with pheno data_1
+msd <- readMSData(files = paste(raw_data_dir, raw_data_MS1_ENDO[,], sep = ""),
+                  pdata = new("NAnnotatedDataFrame",pheno_data_ENDO_1), 
+                  msLevel = 1,
+                  mode = "onDisk")
+
+
+
+### for automated separation for EXO FILES
+for (i in 1:nrow(MS1_EXO_files)){
+  sps <- Spectra(paste(input_dir_MS1, MS1_EXO_files[i,1], sep = ""), source = MsBackendMzR())
+  
+  # set polarity to negative = 0 or positive = 1
+  sps_neg <- sps[sps$polarity==0]
+  sps_pos <- sps[sps$polarity==1] 
+  
+  # check polarities
+  #table(polarity(sps))
+  #table(polarity(sps_neg))
+  #table(polarity(sps_pos))
+  
+  
+  # export data in separate files for neg and pos
+  export(sps_neg, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_neg", MS1_EXO_files[i,1]),
+                                                         sep = ""))
+  export(sps_pos, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_pos", MS1_EXO_files[i,1]), 
+                                                         sep = ""))
+}
+
+raw_data_MS1_EXO <- data.frame(list.files(raw_data_dir, pattern = "EXO"))
+sps_test <- Spectra(paste(raw_data_dir, raw_data_MS1_EXO[1,1], sep = ""), source = MsBackendMzR())
+sps_test
+table(polarity(sps_test))
 
 
 
