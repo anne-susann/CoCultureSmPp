@@ -23,25 +23,23 @@ library(CAMERA)
 
 ###------parallelization----
 
-library(parallel)
-n.cores <- detectCores()
+# library(parallel)
+# n.cores <- detectCores()
 
-# Set up parallel processing using 2 cores
-if (.Platform$OS.type == "unix") {
-  register(bpstart(MulticoreParam(2)))
-} else {
-  register(bpstart(SnowParam(4)))
-}
-
+# # Set up parallel processing using 2 cores
+# if (.Platform$OS.type == "unix") {
+#   register(bpstart(MulticoreParam(2)))
+# } else {
+#   register(bpstart(SnowParam(4)))
+# }
+#R.Version()
 
 ########## set directory and list files ########
 
 # set data directory for MS1 data files
 input_dir_MS1 <- paste(getwd(), "/MS1/", sep = "")
-
 # set data directory for MS2 data files
 input_dir_MS2 <- paste(getwd(), "/MS2/", sep = "")
-
 # file lists
 files_MS1 <- list.files(input_dir_MS1)
 files_MS2 <- list.files(input_dir_MS2)
@@ -57,9 +55,11 @@ if (dir.exists(paste(getwd(), "/plots/", sep = ""))){
 }
 
 ###----MS1 ENDO files----
-MS1_ENDO_files <- data.frame(list.files(input_dir_MS1, pattern = "ENDO"))
+#MS1_ENDO_files <- data.frame(list.files(input_dir_MS1, pattern = "ENDO"))
+MS1_ENDO_files <- list.files(input_dir_MS1, pattern = "ENDO")
 # basenames of files without path and without extension
-MS1_ENDO_names <- data.frame(str_remove(MS1_ENDO_files[,], ".mzML"))
+#MS1_ENDO_names <- data.frame(str_remove(MS1_ENDO_files[,], ".mzML"))
+MS1_ENDO_names <- str_remove(MS1_ENDO_files, ".mzML")
 
 
 ###----MS1 EXO files----
@@ -68,12 +68,15 @@ MS1_ENDO_names <- data.frame(str_remove(MS1_ENDO_files[,], ".mzML"))
 
 
 ###----MS2 files----
-MS2_files <- data.frame(list.files(input_dir_MS2, pattern = ".mzML"))
-
+#MS2_files <- data.frame(list.files(input_dir_MS2, pattern = ".mzML"))
+MS2_files <- list.files(input_dir_MS2, pattern = ".mzML")
 # ENDO files
-MS2_ENDO_files <- data.frame(subset(MS2_files, grepl("ENDO", MS2_files[,1]), drop = TRUE))
-MS2_ENDO_neg_files <- data.frame(subset(MS2_ENDO_files, grepl("neg", MS2_ENDO_files[,1]), drop = TRUE))
-MS2_ENDO_pos_files <- data.frame(subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files[,1]), drop = TRUE))
+# MS2_ENDO_files <- data.frame(subset(MS2_files, grepl("ENDO", MS2_files[,1]), drop = TRUE))
+# MS2_ENDO_neg_files <- data.frame(subset(MS2_ENDO_files, grepl("neg", MS2_ENDO_files[,1]), drop = TRUE))
+# MS2_ENDO_pos_files <- data.frame(subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files[,1]), drop = TRUE))
+MS2_ENDO_files <- subset(MS2_files, grepl("ENDO", MS2_files, drop = TRUE)
+MS2_ENDO_neg_files <- subset(MS2_ENDO_files, grepl("neg", MS2_ENDO_files), drop = TRUE)
+MS2_ENDO_pos_files <- subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files), drop = TRUE)
 
 # EXO files
 #MS2_EXO_files <- data.frame(subset(MS2_files, grepl("EXO", MS2_files[,1]), drop = TRUE))
@@ -107,11 +110,17 @@ for (i in 1:nrow(MS1_ENDO_files)){
                                                          sep = ""))
 }
 
-raw_data_MS1_ENDO <- data.frame(list.files(raw_data_dir, pattern = "ENDO"))
-raw_data_MS1_ENDO_neg <- data.frame(subset(raw_data_MS1_ENDO, grepl("neg", raw_data_MS1_ENDO[,1]), drop = TRUE))
-sps_test <- Spectra(paste(raw_data_dir, raw_data_MS1_ENDO[,1], sep = ""), source = MsBackendMzR())
-sps_test
-table(polarity(sps_test))
+# raw_data_dir <- paste(getwd(), "/MS1_pos_neg/", sep = "")
+# setwd(raw_data_dir)
+# raw_data_MS1_ENDO <- data.frame(list.files(raw_data_dir, pattern = "ENDO"))
+# raw_data_MS1_ENDO_neg <- data.frame(subset(raw_data_MS1_ENDO, grepl("neg", raw_data_MS1_ENDO[,1]), drop = TRUE))
+# fls <- raw_data_MS1_ENDO_neg[,1]
+# class(fls)
+
+
+# sps_test <- Spectra(fls, source = MsBackendMzR())
+# sps_test
+# table(polarity(sps_test))
 
 ## separation of EXO FILES
 for (i in 1:nrow(MS1_EXO_files)){
@@ -130,25 +139,39 @@ for (i in 1:nrow(MS1_EXO_files)){
                                                          sep = ""))
 }
 
-raw_data_MS1_EXO <- data.frame(list.files(raw_data_dir, pattern = "EXO"))
-sps_test_x <- Spectra(paste(raw_data_dir, raw_data_MS1_EXO[1,1], sep = ""), source = MsBackendMzR())
-sps_test_x
-table(polarity(sps_test_x))
+# raw_data_MS1_EXO <- data.frame(list.files(raw_data_dir, pattern = "EXO"))
+# sps_test_x <- Spectra(paste(raw_data_dir, raw_data_MS1_EXO[1,1], sep = ""), source = MsBackendMzR())
+# sps_test_x
+# table(polarity(sps_test_x))
 
 ###----MS1 preparations----
 # Analysis of MS1 ENDO data only from here on
 # MS1 variables
-pol <- c(x = polarity, start =0, stop = 0)
-ppm <- 35
-ms1_intensity_cutoff <- 100	          #approx. 0.01%
+# pol <- c(x = polarity, start =0, stop = 0)
+# ppm <- 35
+# ms1_intensity_cutoff <- 100	          #approx. 0.01%
 
-mzml_times_ENDO <- NULL
-
+# mzml_times_ENDO <- NULL
+###----Creation of Phenodata/Metadata----
 # create vector with sample classes according to culture information sheet
 samp_groups <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
                  rep(x = "Sm", times = 8), 
                  rep(x = "Pp", times = 8),
                  "CoCuSm", "CoCuPp", "MB")
+
+
+CoCuPp_des <- "Co-culture sample from Prymnesium parvum"
+CoCuSm_des <- "Co-culture sample from Skeletonema marinoi"
+Sm_des <- "Mono-culture sample from Skeletonema marinoi"
+Pp_des <- "Mono-culture sample from Prymnesium parvum"
+MB_des <- "Media Blank"
+
+# create vector with sample classes according to culture information sheet
+samp_groups_description <- c(CoCuPp_des, CoCuSm_des, CoCuSm_des, CoCuPp_des, CoCuPp_des, CoCuSm_des,
+                 rep(x = Sm_des, times = 8), 
+                 rep(x = Pp_des, times = 8),
+                 CoCuSm_des, CoCuPp_des, MB_des)
+
 
 # create vector with colors 
 CoCuPp1 <- ("royalblue4")
@@ -161,43 +184,51 @@ CoCuSm3 <- ("darksalmon")
 CoCuPp3 <- ("royalblue4")
 MB <- rep("springgreen", 1)
 
-col <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB)
+color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB)
 
 # create phenodata based on culture type
-pheno_data_ENDO <- data.frame(sample_name = MS1_ENDO_names, sample_group = samp_groups)
+pheno_data_ENDO <- data.frame(sample_name = MS1_ENDO_names, sample_group = samp_groups, samp_groups_description = samp_groups_description)
 pheno_col_ENDO <- data.frame(col)
 
+#stop first
+#please check the directory where it should be saved
+dir_ms2_endo <- "./CoCultureSmPp/MS1_pos_neg"
+write.csv(pheno_data_ENDO, paste(dir_ms2_endo, "/pheno_data_endo.csv", sep =""))
+
 # Display MSn levels and check amount of spectra
-mzml_msn_ENDO <- NULL
-for (i in 1:length(MS1_ENDO_files)) {
-  mzml_data_ENDO <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[,i], sep = ""), mode="onDisk")
-  mzml_msn_ENDO <- rbind(mzml_msn_ENDO, t(as.matrix(table(msLevel(mzml_data_ENDO)))))
-}
-colnames(mzml_msn_ENDO) <- c("MSn 0", "MSn 1")
-rownames(mzml_msn_ENDO) <- MS1_ENDO_names
+# mzml_msn_ENDO <- NULL
+# for (i in 1:length(MS1_ENDO_files)) {
+#   mzml_data_ENDO <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[,i], sep = ""), mode="onDisk")
+#   mzml_msn_ENDO <- rbind(mzml_msn_ENDO, t(as.matrix(table(msLevel(mzml_data_ENDO)))))
+# }
+# colnames(mzml_msn_ENDO) <- c("MSn 0", "MSn 1")
+# rownames(mzml_msn_ENDO) <- MS1_ENDO_names
 
-# Plot MSn levels (only if MS1 and MS2 data are in same directory/file, then exchange MSn 0 for MS1 and MS2)
-#pdf(file="plots/ENDOMS1_msn_levels.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(file="plots/ENDOMS1_msn_levels.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
-par(mfrow=c(2,1), mar=c(5,4,4,2), oma=c(0,0,0,0), cex.axis=0.9, cex=0.8)
-boxplot(mzml_msn_ENDO, main="Number of spectra")
+# # Plot MSn levels (only if MS1 and MS2 data are in same directory/file, then exchange MSn 0 for MS1 and MS2)
+# #pdf(file="plots/ENDOMS1_msn_levels.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
+# jpeg(file="plots/ENDOMS1_msn_levels.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+# par(mfrow=c(2,1), mar=c(5,4,4,2), oma=c(0,0,0,0), cex.axis=0.9, cex=0.8)
+# boxplot(mzml_msn_ENDO, main="Number of spectra")
 
-model_boxplot <- boxplot(t(mzml_msn_ENDO[,2]), main="Number of MS1 spectra per sample", xaxt="n")
-tick <- seq_along(model_boxplot$names)
-axis(1, at=tick, labels=F)
-text(tick, par("usr")[3]-par("usr")[3]/10, model_boxplot$names, adj=0, srt=270, xpd=T)
-dev.off()
+# model_boxplot <- boxplot(t(mzml_msn_ENDO[,2]), main="Number of MS1 spectra per sample", xaxt="n")
+# tick <- seq_along(model_boxplot$names)
+# axis(1, at=tick, labels=F)
+# text(tick, par("usr")[3]-par("usr")[3]/10, model_boxplot$names, adj=0, srt=270, xpd=T)
+# dev.off()
 
 ###----Import raw DATA ENDO NEGATIVE----
-
+# input directory
+input_dir_MS1_polarity <- paste(getwd(), "/MS1_pos_neg/", sep = "")
+#endo_neg files
+MS1_ENDO_neg_files <- list.files(input_dir_MS1_polarity, pattern = "_neg_ENDO")
 # Import raw data as MSnbase object OnDiskMsnExp
-msd <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[,], sep = ""),
+msd <- readMSData(files = paste(input_dir_MS1_polarity, MS1_ENDO_neg_files, sep = ""),
                   pdata = new("NAnnotatedDataFrame",pheno_data_ENDO),
                   mode = "onDisk",
                   centroided = TRUE)
 
 # Import as XCMSnExp object for visual analysis
-msd_XCMS <- readMSData(files = paste(input_dir_MS1, MS1_ENDO_files[,], sep = ""), 
+msd_XCMS <- readMSData(files = paste(input_dir_MS1_polarity,  MS1_ENDO_neg_files, sep = ""), 
                        pdata = new("NAnnotatedDataFrame",pheno_data_ENDO),
                        msLevel = 1,
                        centroided = TRUE)
@@ -214,38 +245,38 @@ msd <- filterRt(msd, c(0, 1020))
 # subset data for msLevel = 1 and save raw data
 msd <- filterMsLevel(msd, msLevel = 1)
 table(msLevel(msd))
-write.csv(fData(msd), file="ENDO_raw_data.csv", row.names=FALSE)
+write.csv(fData(msd), file=paste(input_dir_MS1_polarity, "ENDO_neg_raw_data.csv", sep = ""), row.names=FALSE)
 
-# Inspect mz values per file
-msd_mz <- mz(msd)
-msd_mz <- split(msd_mz, f = fromFile(msd))
-print(length(msd_mz))
+# # Inspect mz values per file
+# msd_mz <- mz(msd)
+# msd_mz <- split(msd_mz, f = fromFile(msd))
+# print(length(msd_mz))
 
 # Get base peak chromatograms
 register(bpstart(SnowParam()))
-
-chromas_ENDO <- chromatogram(msd_XCMS, 
+setwd(input_dir_MS1_polarity)
+chromas_ENDO_neg <- chromatogram(msd_XCMS, 
                              aggregationFun="max", 
                              msLevel = 1,
                              BPPARAM = SnowParam(workers = 3))
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/ENDO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots/ENDO_chromas.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+jpeg(filename = "plots/ENDO_chromas_neg.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
-plot(chromas_ENDO, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = col)
+plot(chromas_ENDO_neg, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
 legend("topleft", bty="n", pt.cex=2, cex=1,5, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(col), legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
+       col= unique(color), legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
 dev.off()
 
 # Get TICs
 #pdf(file="plots/ENDO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
 jpeg(filename = "plots/ENDO_tics.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,4,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=0.4, cex.lab=2, cex.main=2)
-tics_ENDO <- split(tic(msd), f=fromFile(msd))
-boxplot(tics_ENDO, col=col, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
+tics_ENDO_neg <- split(tic(msd), f=fromFile(msd))
+boxplot(tics_ENDO_neg, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
 legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(col), legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
+       col= unique(color), legend= unique(msd_XCMS@phenoData@data[["sample_group"]]))
 dev.off()
 
 ### ---- pre-processing ----
