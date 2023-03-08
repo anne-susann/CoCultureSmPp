@@ -80,6 +80,61 @@ MS2_ENDO_pos_files <- data.frame(subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_fi
 #MS2_EXO_neg_files <- data.frame(subset(MS2_EXO_files, grepl("neg", MS2_EXO_files[,1]), drop = TRUE))
 #MS2_EXO_pos_files <- data.frame(subset(MS2_EXO_files, grepl("pos", MS2_EXO_files[,1]), drop = TRUE))
 
+###----Separate neg and pos mode in individual files-----
+# create result directory
+if (dir.exists(paste(getwd(), "/raw_data/", sep = ""))){
+  raw_data_dir <- paste(getwd(), "/raw_data/", sep = "")
+}  else{
+  dir.create("raw_data")
+  raw_data_dir <- paste(getwd(), "/raw_data/", sep = "")
+}
+
+
+## separation of ENDO FILES
+for (i in 1:nrow(MS1_ENDO_files)){
+  sps <- Spectra(paste(input_dir_MS1, MS1_ENDO_files[i,1], sep = ""), source = MsBackendMzR())
+  
+  # set polarity to negative = 0 or positive = 1
+  sps_neg <- sps[sps$polarity==0]
+  sps_pos <- sps[sps$polarity==1] 
+  
+  # export data in separate files for neg and pos
+  export(sps_neg, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_neg", MS1_ENDO_files[i,1]),
+                                                         sep = ""))
+  export(sps_pos, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_pos", MS1_ENDO_files[i,1]), 
+                                                         sep = ""))
+}
+
+raw_data_MS1_ENDO <- data.frame(list.files(raw_data_dir, pattern = "ENDO"))
+raw_data_MS1_ENDO_neg <- data.frame(subset(raw_data_MS1_ENDO, grepl("neg", raw_data_MS1_ENDO[,1]), drop = TRUE))
+sps_test <- Spectra(paste(raw_data_dir, raw_data_MS1_ENDO[,1], sep = ""), source = MsBackendMzR())
+sps_test
+table(polarity(sps_test))
+
+## separation of EXO FILES
+for (i in 1:nrow(MS1_EXO_files)){
+  sps <- Spectra(paste(input_dir_MS1, MS1_EXO_files[i,1], sep = ""), source = MsBackendMzR())
+  
+  # set polarity to negative = 0 or positive = 1
+  sps_neg <- sps[sps$polarity==0]
+  sps_pos <- sps[sps$polarity==1] 
+  
+  # export data in separate files for neg and pos
+  export(sps_neg, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_neg", MS1_EXO_files[i,1]),
+                                                         sep = ""))
+  export(sps_pos, backend = MsBackendMzR(), file = paste(raw_data_dir, 
+                                                         gsub("KSS_210324","\\coculture_pos", MS1_EXO_files[i,1]), 
+                                                         sep = ""))
+}
+
+raw_data_MS1_EXO <- data.frame(list.files(raw_data_dir, pattern = "EXO"))
+sps_test_x <- Spectra(paste(raw_data_dir, raw_data_MS1_EXO[1,1], sep = ""), source = MsBackendMzR())
+sps_test_x
+table(polarity(sps_test_x))
+
 ###----MS1 preparations----
 # Analysis of MS1 ENDO data only from here on
 # MS1 variables
