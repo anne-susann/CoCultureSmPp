@@ -34,6 +34,8 @@ library(CAMERA)
 # }
 #R.Version()
 
+start.time <- Sys.time()
+
 ########## set directory and list files ########
 
 # set data directory for MS1 data files
@@ -188,7 +190,7 @@ color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB)
 
 # create phenodata based on culture type
 pheno_data_ENDO <- data.frame(sample_name = MS1_ENDO_names, sample_group = samp_groups, samp_groups_description = samp_groups_description)
-pheno_col_ENDO <- data.frame(col)
+pheno_color_ENDO <- data.frame(color)
 
 #stop first
 #please check the directory where it should be saved
@@ -374,11 +376,11 @@ ms1_pca_ENDO <- prcomp(t(na.omit(log2(featureValues(ms1_data_ENDO, value="into")
 plot(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], pch=19, main="PCA: Grouping of samples",
      xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO)$importance[2, 2] * 100, digits=3), " % variance"),
-     col=col, cex=0.8)
+     col=color, cex=0.8)
 grid()
-text(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], labels=ms1_data_ENDO$sample_name, col=col, pos=3, cex=0.5)
+text(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], labels=ms1_data_ENDO$sample_name, col=color, pos=3, cex=0.5)
 legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(col), legend= unique(ms1_data_ENDO@phenoData@data[["sample_group"]]))
+       col= unique(color), legend= unique(ms1_data_ENDO@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
@@ -449,11 +451,11 @@ ms1_pca_ENDO <- prcomp(feat_list_ENDO, center=TRUE)
 plot(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], pch=19, main="PCA of feature table",
      xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO)$importance[2, 2] * 100, digits=3), " % variance"),
-     col=col, cex=0.8)
+     col=color, cex=0.8)
 grid()
-text(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], labels=ms1_data_ENDO$sample_name, col=col, pos=3, cex=0.5)
+text(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], labels=ms1_data_ENDO$sample_name, col=color, pos=3, cex=0.5)
 legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(col), legend= unique(ms1_data_ENDO@phenoData@data[["sample_group"]]))
+       col= unique(color), legend= unique(ms1_data_ENDO@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
@@ -512,7 +514,9 @@ model_div_ENDO[is.na(model_div_ENDO)] <- 0
 
 
 
+end.time <- Sys.time()
 
-
+time.taken <- end.time - start.time
+print(time.taken)
 
 

@@ -132,6 +132,7 @@ col_1 <- c(col, col)
 
 # create phenodata based on culture type
 pheno_data_ENDO <- data.frame(sample_name = MS1_ENDO_names, sample_group = samp_groups)
+pheno_data_samples_ENDO <- as.factor(pheno_data_ENDO$sample_group)
 pheno_col_ENDO <- data.frame(col)
 pheno_col_samples_ENDO <- data.frame(cbind(pheno_col_ENDO$col, pheno_data_ENDO$sample_group))
 
@@ -432,10 +433,11 @@ time.xcmsSet <- system.time({ # measuring time
 
 
 ###---- resume with iESTIMATE parameters, MS1 data in object ----
-# parameters here taken from iESTIMATE, need to be calculated with internal standard
-ms1_params_ENDO <- CentWaveParam(ppm=13, mzCenterFun="mean", peakwidth=c(4, 33), prefilter=c(4, 200), 
-                                  mzdiff=0.0023, snthresh=11, noise=0, integrate=1,
-                                  firstBaselineCheck=TRUE, verboseColumns=TRUE, fitgauss=FALSE, 
+# parameters now calculated with IPO, but with neg and pos still in same file
+# next round parameters will be calculated with only neg or only pos
+ms1_params_ENDO <- CentWaveParam(ppm=39.5, mzCenterFun="wMean", peakwidth=c(4, 80), prefilter=c(1, 7), 
+                                  mzdiff=0.0155, snthresh=1, noise=0, integrate=1,
+                                  firstBaselineCheck=TRUE, verboseColumns=FALSE, fitgauss=FALSE, 
                                   roiList=list(), roiScales=numeric())
 
 
@@ -638,7 +640,69 @@ model_div_ENDO$unique      <- apply(X=uniq_list_ENDO, MARGIN=1, FUN=function(x) 
 # Remove NAs if present
 model_div_ENDO[is.na(model_div_ENDO)] <- 0
 
+#################Statistical analysis MS1################
 
+# ---------- Histogram ----------
+jpeg(file="plots/neg_ms1_hist.jpeg", width = 1000, height = 500, quality = 100, bg = "white")
+hist(as.numeric(feat_list_ENDO))
+dev.off()
+
+
+# ---------- Variation partitioning ----------
+mzml_pheno_organism_samples_ENDO <- as.factor(c("P.parvum", "S.marinoi", "S.marinoi", "P.parvum", "P.parvum", "S.marinoi",
+                                                rep(x = "S.marinoi", times = 8), 
+                                                rep(x = "P.parvum", times = 8),
+                                                "S.marinoi", "P.parvum", "MB"))
+model_varpart_ENDO <- varpart(scale(feat_list_ENDO), ~ pheno_data_samples_ENDO, ~ mzml_pheno_organism_samples_ENDO)
+
+# Plot results
+pdf(file="plots/ENDO_ms1_varpart.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
+plot(model_varpart_ENDO, Xnames=c("sample group","samples"), cutoff=0, cex=1.2, id.size=1.2, digits=1, bg=c("blue","green"))
+legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= c("blue","green"), legend= unique(model_varpart_ENDO[["tables"]]))
+dev.off()
+
+## results not very consise
+
+# ---------- Variable Selection ----------
+# Random Forest
+sel_rf_ENDO <- f.select_features_random_forest(feat_matrix=feat_list_ENDO, 
+                                              sel_factor=as.factor(pheno_data_samples_ENDO), 
+                                              sel_colors=pheno_col_ENDO$col, 
+                                              tune_length=10, quantile_threshold=0.95, 
+                                              plot_roc_filename="plots/ENDO_ms1_select_rf_roc.pdf")
+print(paste("Number of selected features:", 
+            f.count.selected_features(sel_feat=sel_rf_ENDO$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=feat_list_ENDO, 
+                            sel_feat=sel_rf_ENDO$`_selected_variables_`, 
+                            filename="plots/ENDO_ms1_select_rf.pdf", main="Random Forest")
+
+# PLS
+sel_pls_ENDO <- f.select_features_pls(feat_matrix=feat_list_neg, 
+                                      sel_factor=as.factor(pheno_data_samples_ENDO), 
+                                      sel_colors=pheno_col_ENDO$col, components=2, 
+                                      tune_length=10, quantile_threshold=0.95, 
+                                      plot_roc_filename="plots/ENDO_ms1_select_pls_roc.pdf")
+print(paste("Number of selected features:", 
+            f.count.selected_features(sel_feat=sel_pls_ENDO$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=feat_list_ENDO, 
+                            sel_feat=sel_pls_ENDO$`_selected_variables_`, 
+                            filename="plots/ENDO_ms1_select_pls.pdf", main="PLS")
+
+# sPLS-DA
+# First: Variation partitioning
+model_varpart_neg <- varpart(scale(feat_list_ENDO), ~ pheno_data_samples_ENDO, ~ pheno_data_samples_ENDO)
+
+# 10% of features correlate with factor
+model_varpart_corr_ENDO <- trunc(model_varpart_ENDO$part$indfract$Adj.R.squared[2] * ncol(feat_list_ENDO))
+model_splsda_keepx_ENDO <- trunc(seq(model_varpart_corr_ENDO / length(unique(pheno_data_samples_ENDO)), model_varpart_corr_ENDO / length(unique(pheno_data_samples_ENDO))^2,length.out=length(unique(pheno_data_samples_ENDO))))
+
+sel_splsda_ENDO <- f.select_features_splsda(feat_matrix=feat_list_ENDO, sel_colors=pheno_col_ENDO$col, sel_factor=pheno_data_samples_ENDO, tune_components=length(unique(pheno_data_samples_ENDO)) - 1, sel_components=c(3), folds_number=10, keepx=model_splsda_keepx_ENDO, plot_roc_filename="plots/ENDO_ms1_select_splsda_roc.pdf")
+print(paste("Number of selected features:", f.count.selected_features(sel_feat=sel_splsda_ENDO$'_selected_variables_')))
+f.heatmap.selected_features(feat_list=feat_list_ENDO, sel_feat=sel_splsda_ENDO$'_selected_variables_', filename="plots/ENDO_ms1_select_splsda.pdf", main="sPLS-DA")
+
+
+# hierarchical clustering
 
 
 # ############################## MS2 ##############################
@@ -764,6 +828,26 @@ ms1_def_ENDO$has_ms2 <- as.integer(rownames(ms1_def_ENDO) %in% names(ms2_spectra
 
 
 
-###----with MS-Dial----
-# C:\Users\abela\Downloads\MSDIAL ver.4.9.221218 Windowsx64\MSDIAL ver.4.9.221218 Windowsx64
-# MS-Dial
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
