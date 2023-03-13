@@ -585,6 +585,20 @@ legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch
        col= unique(col), legend= unique(ms1_data_ENDO@phenoData@data[["sample_group"]]))
 dev.off()
 
+#PCA of feature table without media blank
+jpeg(filename = "plots/EXO_neg_ms1_feature_table_pca_exc_MB.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+ms1_pca_EXO_neg <- prcomp(feat_list_EXO_neg[1:24,], center=TRUE)
+plot(ms1_pca_EXO_neg$x[, 1], ms1_pca_EXO_neg$x[,2], pch=19, main="PCA of feature table",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_EXO_neg)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_EXO_neg)$importance[2, 2] * 100, digits=3), " % variance"),
+     col=color, cex=0.8)
+grid()
+text(ms1_pca_EXO_neg$x[,1], ms1_pca_EXO_neg$x[,2], labels=ms1_data_EXO_neg$sample_name[1:24], col=color, pos=3, cex=0.9)
+legend("topleft", bty="n", pt.cex=1, cex=1, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color), legend= unique(ms1_data_EXO_neg@phenoData@data[["sample_group"]]))
+dev.off()
+
+
 # broken stick
 png("BrokenStick_ENDO.png", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
@@ -653,11 +667,17 @@ mzml_pheno_organism_samples_ENDO <- as.factor(c("P.parvum", "S.marinoi", "S.mari
                                                 rep(x = "S.marinoi", times = 8), 
                                                 rep(x = "P.parvum", times = 8),
                                                 "S.marinoi", "P.parvum", "MB"))
-model_varpart_ENDO <- varpart(scale(feat_list_ENDO), ~ pheno_data_samples_ENDO, ~ mzml_pheno_organism_samples_ENDO)
+
+mzml_pheno_culture_type_ENDO <- as.factor(c("Co-Culture", "Co-Culture", "Co-Culture", "Co-Culture", "Co-Culture", "Co-Culture",
+                                                rep(x = "Mono-Culture", times = 8), 
+                                                rep(x = "Mono-Culture", times = 8),
+                                                "Co-Culture", "Co-Culture", "MB"))
+
+model_varpart_ENDO <- varpart(scale(feat_list_ENDO), ~ pheno_data_samples_ENDO, ~ mzml_pheno_culture_type_ENDO)
 
 # Plot results
 pdf(file="plots/ENDO_ms1_varpart.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-plot(model_varpart_ENDO, Xnames=c("sample group","samples"), cutoff=0, cex=1.2, id.size=1.2, digits=1, bg=c("blue","green"))
+plot(model_varpart_ENDO, Xnames=c("sample group","culture type"), cutoff=0, cex=1.2, id.size=1.2, digits=1, bg=c("blue","green"))
 legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch=20, 
        col= c("blue","green"), legend= unique(model_varpart_ENDO[["tables"]]))
 dev.off()
@@ -665,6 +685,15 @@ dev.off()
 ## results not very consise
 
 # ---------- Variable Selection ----------
+# stop all background parallel computing
+unregister_dopar <- function() {
+  env <- foreach:::.foreachGlobals
+  rm(list=ls(name=env), pos=env)
+}
+unregister_dopar()
+
+library(caret)
+
 # Random Forest
 sel_rf_ENDO <- f.select_features_random_forest(feat_matrix=feat_list_ENDO, 
                                               sel_factor=as.factor(pheno_data_samples_ENDO), 
@@ -676,6 +705,8 @@ print(paste("Number of selected features:",
 f.heatmap.selected_features(feat_list=feat_list_ENDO, 
                             sel_feat=sel_rf_ENDO$`_selected_variables_`, 
                             filename="plots/ENDO_ms1_select_rf.pdf", main="Random Forest")
+
+
 
 # PLS
 sel_pls_ENDO <- f.select_features_pls(feat_matrix=feat_list_neg, 
