@@ -19,7 +19,8 @@ start.time <- Sys.time()
 ########## set directory and list files ########
 
 # set data directory for MS1 data files
-input_dir_MS1 <- "/Users/mahnoorzulfiqar/OneDriveUNI/CoCulture_mzML2/MS1_pos_neg"
+input_dir_MS1 <- paste(getwd(), "/MS1_pos_neg/", sep = "")
+input_dir_MS1
 
 #setwd(input_dir_MS1)# set data directory for MS1 data files
 #input_dir_MS1 <- paste(getwd(), "/MS1/", sep = "")
@@ -32,11 +33,11 @@ files_MS2 <- list.files(input_dir_MS2)
 files_MS2
 
 # create plot directory
-if (dir.exists(paste(getwd(), "/plots/", sep = ""))){
+if (dir.exists(paste(getwd(), "/exo_pos_plots/", sep = ""))){
   print("plots directory already exists")
   start_time <- Sys.time()
 }  else{
-  dir.create("plots")
+  dir.create("exo_pos_plots")
   start_time <- Sys.time()
   print("plots folder has been created")
 }
@@ -52,7 +53,7 @@ raw_data_MS1_EXO_pos
 # sps_all
 
 raw_data_MS1_EXO_pos <- list.files(input_dir_MS1, pattern = "pos_EXO")
-raw_data_MS1_EXO_pos_files <- paste(input_dir_MS1, "/", raw_data_MS1_EXO_pos, sep ="")
+raw_data_MS1_EXO_pos_files <- paste(input_dir_MS1, raw_data_MS1_EXO_pos, sep ="")
 raw_data_MS1_EXO_pos_files
 
 raw_data_MS2_EXO_pos <- list.files(input_dir_MS2, pattern = "EXOpos")
@@ -62,13 +63,9 @@ raw_data_MS2_EXO_pos_files
 all_files <- c(raw_data_MS1_EXO_pos_files, raw_data_MS2_EXO_pos_files)
 length(all_files)
 
-36-11
-
-all_files_names <- str_remove_all(all_files, ".mzML")
-all_files_names <- str_remove_all(all_files_names,"/Users/mahnoorzulfiqar/OneDriveUNI/CoCulture2/MS1_pos_neg/")
-
-all_files_names[26:36]<- str_remove_all(all_files_names[26:36], '/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/CoCulture2/MS2/')
-
+all_files_names <- str_remove(all_files, ".mzML")
+all_files_names <- str_remove_all(all_files_names, input_dir_MS1)
+all_files_names[26:36]<- str_remove_all(all_files_names[26:36], input_dir_MS2)
 all_files_names
 
 # create vector with sample classes according to culture information sheet
@@ -136,7 +133,16 @@ msd <- filterRt(msd, c(0, 1020))
 # subset data for msLevel = 1 and save raw data
 msd <- filterMsLevel(msd, msLevel = 1)
 table(msLevel(msd))
-write.csv(fData(msd), file=paste(filename = "Results/EXO_pos_raw_data.csv", sep = ""), row.names=FALSE)
+# create result directory
+if (dir.exists(paste(getwd(), "/exo_pos_Results/", sep = ""))){
+  print("plots directory already exists")
+  start_time <- Sys.time()
+}  else{
+  dir.create("exo_pos_Results")
+  start_time <- Sys.time()
+  print("results folder has been created")
+}
+write.csv(fData(msd), file=paste(filename = "exo_pos_Results/EXO_pos_raw_data.csv", sep = ""), row.names=FALSE)
 
 
 
@@ -152,7 +158,7 @@ chromas_EXO_pos
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/EXO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots/EXO_chromas_pos.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_chromas.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
 plot(chromas_EXO_pos, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
 legend("topleft", bty="n", pt.cex=2, cex=1,5, y.intersp=0.7, text.width=0.5, pch=20, 
@@ -162,7 +168,7 @@ dev.off()
 
 # Get TICs
 #pdf(file="plots/EXO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots/EXO_tics_pos.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_tics.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,4,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=0.4, cex.lab=2, cex.main=2)
 tics_EXO_pos <- split(tic(msd), f=fromFile(msd))
 boxplot(tics_EXO_pos, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
@@ -187,7 +193,7 @@ colnames(chromas_bin_cor_EXO_pos) <- rownames(chromas_bin_cor_EXO_pos) <- msd$sa
 chromas_bin_cor_EXO_pos[is.na(chromas_bin_cor_EXO_pos)] <- 0
 
 
-jpeg(filename = "plots/heatmap_chromas_bin_EXO_pos.jpeg", width = 500, height = 500, quality = 100, bg = "white")
+jpeg(filename = "exo_pos_plots/heatmap_chromas_bin_EXO_pos.jpeg", width = 500, height = 500, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
 heatmap(chromas_bin_cor_EXO_pos)
 dev.off()
@@ -231,9 +237,9 @@ table(msLevel(ms_data_EXO_pos))
 
 
 
-write.csv(as.data.frame(table(msLevel(ms_data_EXO_pos))), file="Results/EXO_pos_ms_data.csv", row.names=FALSE)
+write.csv(as.data.frame(table(msLevel(ms_data_EXO_pos))), file="exo_pos_Results/EXO_pos_ms_data.csv", row.names=FALSE)
 
-jpeg(filename = "plots/EXO_ms_data.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_ms_data.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
 plotChromPeakImage(ms_data_EXO_pos, main="Frequency of identified peaks per RT", binSize = 20)
 #dev.off()
@@ -251,7 +257,7 @@ ms_data_EXO_pos <- adjustRtime(ms_data_EXO_pos, param=PeakGroupsParam(
 
 # Plot the difference of raw and adjusted retention times
 #pdf(file="plots/EXO_ms1_raw_adjusted.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=8, family="Helvetica")
-jpeg(filename = "plots/EXO_ms_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_ms_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
 par(mfrow=c(2,1), mar=c(4.5,4.2,4,1), cex=0.8)
 plot(chromas_EXO_pos, peakType="none", main="Raw chromatograms")
 plotAdjustedRtime(ms_data_EXO_pos, lwd=2, main="Retention Time correction")
@@ -278,7 +284,7 @@ head(featureSummary(ms_data_EXO_pos, group=ms_data_EXO_pos$sample_group))
 
 # Evaluate grouping
 #pdf(file="plots/EXO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots/EXO_pos_ms_grouping.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_ms_grouping.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
 ms_pca_EXO_pos <- prcomp(t(na.omit(log2(featureValues(ms_data_EXO_pos, value="into")))), center=TRUE)
 plot(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], pch=19, main="PCA: Grouping of samples",
      xlab=paste0("PC1: ", format(summary(ms_pca_EXO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
@@ -291,7 +297,7 @@ legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch
 dev.off()
 
 # broken stick
-png("plots/BrokenStick_EXO_pos_ms_grouping.png", width=10, height=6, units="in", res=100)
+png("exo_pos_plots/BrokenStick_EXO_pos_ms_grouping.png", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -328,7 +334,7 @@ MS_EXO_pos_peak_detection <- ms_data_EXO_pos
 
 
 
-save(MS_EXO_pos_peak_detection, file = "Results/MS_EXO_pos_peak_detection.RData")
+save(MS_EXO_pos_peak_detection, file = "exo_pos_Results/MS_EXO_pos_peak_detection.RData")
 
 # ---------- Build MS1 feature tables ----------
 # Build feature matrix
@@ -354,17 +360,17 @@ feat_list_EXO_pos <- log2(feat_list_EXO_pos)
 feat_list_EXO_pos[which(is.na(feat_list_EXO_pos))] <- median(na.omit(as.numeric(unlist(feat_list_EXO_pos))))
 
 # save as csv
-write.csv(feat_list_EXO_pos, file=paste(filename = "Results/feature_list_EXO_pos.csv", sep = ""))
+write.csv(feat_list_EXO_pos, file=paste(filename = "exo_pos_Results/feature_list_EXO_pos.csv", sep = ""))
 
 # Plot histogram
 #pdf(file="plots/EXO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots/EXO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
 hist(as.numeric(feat_list_EXO_pos), main="Histogram of feature table")
 dev.off()
 
 # PCA of feature table results
 #pdf(file="plots/EXO_ms1_feature_table_pca.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots/EXO_pos_ms_feature_table_pca.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_ms_feature_table_pca.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
 ms_pca_EXO_pos <- prcomp(feat_list_EXO_pos, center=TRUE)
 plot(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], pch=19, main="PCA of feature table",
      xlab=paste0("PC1: ", format(summary(ms_pca_EXO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
@@ -377,7 +383,7 @@ legend("topleft", bty="n", pt.cex=1, cex=1, y.intersp=0.7, text.width=0.5, pch=2
 dev.off()
 
 # broken stick
-jpeg("plots/BrokenStick_EXO_pos_ms_feature_table_pca.jpeg", width=10, height=6, units="in", res=100)
+jpeg("exo_pos_plots/BrokenStick_EXO_pos_ms_feature_table_pca.jpeg", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -413,7 +419,7 @@ bina_list_EXO_pos[bina_list_EXO_pos != 0] <- 1
 
 
 # save as csv
-write.csv(bina_list_EXO_pos, file=paste(filename = "Results/bina_list_EXO_pos.csv", sep = ""))
+write.csv(bina_list_EXO_pos, file=paste(filename = "exo_pos_Results/bina_list_EXO_pos.csv", sep = ""))
 
 # Only unique compounds in group mzml_pheno$ and not the others
 uniq_list_EXO_pos <- apply(X=bina_list_EXO_pos, MARGIN=2, FUN=function(x) { if (length(unique(pheno_data_EXO$sample_group[grepl("1", x)])) == 1) x else rep(0, length(x)) } )
@@ -437,7 +443,7 @@ model_div_EXO_pos$unique      <- apply(X=uniq_list_EXO_pos, MARGIN=1, FUN=functi
 model_div_EXO_pos[is.na(model_div_EXO_pos)] <- 0
 
 # save as csv
-write.csv(model_div_EXO_pos, file=paste(filename = "Results/model_div_EXO_pos.csv", sep = ""))
+write.csv(model_div_EXO_pos, file=paste(filename = "exo_pos_Results/model_div_EXO_pos.csv", sep = ""))
 
 
 # save the objects and tables
@@ -448,6 +454,8 @@ end.time <- Sys.time()
 
 time.taken <- end.time - start.time
 print(time.taken)
+
+
 
 
 
