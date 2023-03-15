@@ -126,7 +126,7 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
 msd <- filterRt(msd, c(0, 1020))
 
 # subset data for msLevel = 1 and save raw data
-msd <- filterMsLevel(msd, msLevel = 1)
+#msd <- filterMsLevel(msd, msLevel = 1)
 table(msLevel(msd))
 # create result directory
 if (dir.exists(paste(getwd(), "/endo_pos_Results/", sep = ""))){
