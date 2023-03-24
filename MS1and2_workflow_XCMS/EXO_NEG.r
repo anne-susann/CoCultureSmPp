@@ -121,9 +121,11 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
 # Restrict data to 1020 seconds (17 minutes)
 msd <- filterRt(msd, c(0, 1020))
 
-# subset data for msLevel = 1 and save raw data
-msd <- filterMsLevel(msd, msLevel = 1)
-table(msLevel(msd))
+# ONLY FOR MS1 DATA
+# subset data for msLevel = 1 and save raw data 
+#msd <- filterMsLevel(msd, msLevel = 1)
+#(msLevel(msd))
+
 # create result directory
 if (dir.exists(paste(getwd(), "/exo_neg_Results/", sep = ""))){
   print("plots directory already exists")

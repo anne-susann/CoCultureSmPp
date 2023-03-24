@@ -125,9 +125,14 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
 # Restrict data to 1020 seconds (17 minutes)
 msd <- filterRt(msd, c(0, 1020))
 
-# subset data for msLevel = 1 and save raw data
+# for MS2 level filter polarity
+#msd <- filterPolarity(msd, polarity = 1)
+
+# ONLY FOR MS1 DATA
+# subset data for msLevel = 1 and save raw data for MS1
 #msd <- filterMsLevel(msd, msLevel = 1)
-table(msLevel(msd))
+#table(msLevel(msd))
+
 # create result directory
 if (dir.exists(paste(getwd(), "/endo_pos_Results/", sep = ""))){
   print("plots directory already exists")
