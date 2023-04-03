@@ -2,7 +2,7 @@
 Analysis of the MS1 and MS2 data of Co-Culture experiment with S. marinoi and P. parvum
 
 ## HOW TO:
-1. Pre-process **ONLY MS1 data** with scripts from _/MS1_workflow_XCMS/ directory. The MS1 data is pre-processed and analysed with specific parameters for each condition (see ENDO_pos, EXO_neg etc.). Run code until ### linking MS2 data ###. Until here you get an overview over the data and first insights into its nature with PCA plots. Created results will be:
+1. Pre-process **ONLY MS1 data** with scripts from _/MS1_workflow_XCMS/_ directory. The MS1 data is pre-processed and analysed with specific parameters for each condition (see ENDO_pos, EXO_neg etc.). Run code until ### linking MS2 data ###. Until here you get an overview over the data and first insights into its nature with PCA plots. Created results will be:
 	- ms1_data_xxx_pol: contains all detected peaks and additional information like polarity, msLevel, filterString etc. and contains the further pre-processing 		(saved as XXX_pol_raw_data.csv and MS1_XXX_pol_peak_detection.RData)
 	- feat_list_XXX_pol: contains the features (saved as feature_list_XXX_pol.csv)
 	- bina_list_XXX_pol: a binary list of absence/presence of peaks across the samples (saved as bina_list_XXX_pol.csv)
