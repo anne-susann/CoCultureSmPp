@@ -682,8 +682,8 @@ time.taken <- end.time - start.time
 print(time.taken)
 
 
-
-# --------- preparations linking MS2 data -----------
+############# linking MS2 data #################
+# --------- preparations -----------
 # load object with MS1 and MS2 files preprocessed
 ms_data_endo_pos <- load(file = "endo_pos_1ms2_Results/MS_endo_pos_peak_detection.RData")
 #ms_def_endo_pos
