@@ -33,11 +33,11 @@ files_MS2 <- list.files(input_dir_MS2)
 files_MS2
 
 # create plot directory
-if (dir.exists(paste(getwd(), "/exo_pos_plots/", sep = ""))){
+if (dir.exists(paste(getwd(), "/exo_pos_1ms2_plots/", sep = ""))){
   print("plots directory already exists")
   start_time <- Sys.time()
 }  else{
-  dir.create("exo_pos_plots")
+  dir.create("exo_pos_1ms2_plots")
   start_time <- Sys.time()
   print("plots folder has been created")
 }
@@ -72,7 +72,7 @@ all_files_names
 samp_groups <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
                  rep(x = "Sm", times = 8), 
                  rep(x = "Pp", times = 8),
-                 "CoCuSm", "CoCuPp", "MB", rep(x = "MS2", times = 11))
+                 "CoCuSm", "CoCuPp", "MB", rep(x = "MS2", times = length(raw_data_MS2_EXO_pos)))
 
 CoCuPp1 <- "Co-culture sample from Prymnesium parvum"
 CoCuSm1 <- "Co-culture sample from Skeletonema marinoi"
@@ -85,7 +85,7 @@ ms2 <- "MS2"
 samp_groups_description <- c(CoCuPp1, CoCuSm1, CoCuSm1, CoCuPp1, CoCuPp1, CoCuSm1,
                  rep(x = Sm1, times = 8), 
                  rep(x = Pp1, times = 8),
-                 CoCuSm1, CoCuPp1, MB1, rep(x = ms2, times = 11))
+                 CoCuSm1, CoCuPp1, MB1, rep(x = ms2, times = length(raw_data_MS2_EXO_pos)))
 
 samp_groups_description
 
@@ -99,7 +99,7 @@ Pp <- rep("yellow2", 8)
 CoCuSm3 <- ("darksalmon")
 CoCuPp3 <- ("royalblue4")
 MB <- rep("springgreen", 1)
-ms2<- rep("aquamarine", 11)
+ms2<- rep("aquamarine", length(raw_data_MS2_EXO_pos))
 color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB, ms2)
 
 
@@ -128,7 +128,7 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
                     "polarity", "retentionTime")])
 
 # Restrict data to 1020 seconds (17 minutes)
-msd <- filterRt(msd, c(0, 1020))
+#msd <- filterRt(msd, c(0, 1020))
 
 # ONLY FOR MS1 DATA
 # subset data for msLevel = 1 and save raw data
@@ -136,45 +136,46 @@ msd <- filterRt(msd, c(0, 1020))
 #table(msLevel(msd))
 
 # create result directory
-if (dir.exists(paste(getwd(), "/exo_pos_Results/", sep = ""))){
+if (dir.exists(paste(getwd(), "/exo_pos_1ms2_Results/", sep = ""))){
   print("plots directory already exists")
-  start_time <- Sys.time()
+  start_time <- Sys.time() 
 }  else{
-  dir.create("exo_pos_Results")
+  dir.create("exo_pos_1ms2_Results")
   start_time <- Sys.time()
   print("results folder has been created")
 }
-write.csv(fData(msd), file=paste(filename = "exo_pos_Results/EXO_pos_raw_data.csv", sep = ""), row.names=FALSE)
+write.csv(fData(msd), file=paste(filename = "exo_pos_1ms2_Results/EXO_pos_raw_data.csv", sep = ""), row.names=FALSE)
 
 
 
 # Get base peak chromatograms
-register(bpstart(SnowParam()))
+#register(bpstart(SnowParam()))
 # setwd(input_dir_MS1_polarity)
 
 chromas_EXO_pos <- chromatogram(msd, 
                              aggregationFun="max", 
-                             msLevel = 1,
-                             BPPARAM = SnowParam(workers = 3))
+                             #msLevel = 1,
+                             #BPPARAM = SnowParam(workers = 3)
+                             )
 chromas_EXO_pos
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/EXO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_chromas.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+jpeg(filename = "exo_pos_1ms2_plots/EXO_pos_chromas.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 plot(chromas_EXO_pos, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
-legend("topleft", bty="n", pt.cex=2, cex=1,5, y.intersp=0.7, text.width=0.5, pch=20, 
+legend("topleft", bty="n", pt.cex=3, cex=1.5, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(msd@phenoData@data[["sample_group"]]))
 dev.off()
 
 
 # Get TICs
 #pdf(file="plots/EXO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_tics.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(5,4,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=0.4, cex.lab=2, cex.main=2)
+jpeg(filename = "exo_pos_1ms2_plots/EXO_pos_tics.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 tics_EXO_pos <- split(tic(msd), f=fromFile(msd))
 boxplot(tics_EXO_pos, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
-legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+legend("topleft", bty="n", pt.cex=3, cex=1.5, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(msd@phenoData@data[["sample_group"]]))
 dev.off()
 
@@ -195,8 +196,8 @@ colnames(chromas_bin_cor_EXO_pos) <- rownames(chromas_bin_cor_EXO_pos) <- msd$sa
 chromas_bin_cor_EXO_pos[is.na(chromas_bin_cor_EXO_pos)] <- 0
 
 
-jpeg(filename = "exo_pos_plots/heatmap_chromas_bin_EXO_pos.jpeg", width = 500, height = 500, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+jpeg(filename = "exo_pos_1ms2_plots/heatmap_chromas_bin_EXO_pos.jpeg", width = 1000, height = 1000, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(7,0,0,7), cex.axis=0.9, cex=0.6)
 heatmap(chromas_bin_cor_EXO_pos)
 dev.off()
 
@@ -210,7 +211,7 @@ head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
 table(polarity(msd))
 
 
-ms_params_EXO_pos <- CentWaveParam(ppm=24.5, mzCenterFun="wMean", peakwidth=c(12, 53), 
+ms_params_EXO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 53), 
                                      prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -239,12 +240,12 @@ table(msLevel(ms_data_EXO_pos))
 
 
 
-write.csv(as.data.frame(table(msLevel(ms_data_EXO_pos))), file="exo_pos_Results/EXO_pos_ms_data.csv", row.names=FALSE)
+write.csv(as.data.frame(table(msLevel(ms_data_EXO_pos))), file="exo_pos_1ms2_Results/EXO_pos_ms_data.csv", row.names=FALSE)
 
-jpeg(filename = "exo_pos_plots/EXO_pos_ms_data.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+jpeg(filename = "exo_pos_1ms2_plots/EXO_pos_ms_data.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=1, cex=2, cex.lab=2, cex.main=2)
 plotChromPeakImage(ms_data_EXO_pos, main="Frequency of identified peaks per RT", binSize = 20)
-#dev.off()
+dev.off()
 
 plotChromPeakImage(ms_data_EXO_pos, main="Frequency of identified peaks per RT", binSize = 20)
 
@@ -255,11 +256,11 @@ ms_data_EXO_pos
 
 ## RT correction
 ms_data_EXO_pos <- adjustRtime(ms_data_EXO_pos, param=PeakGroupsParam(
-  minFraction=0.7,smooth="loess",span=0.8,family="gaussian"))
+  minFraction=0.7,smooth="loess",span=0.5,family="gaussian"))
 
 # Plot the difference of raw and adjusted retention times
 #pdf(file="plots/EXO_ms1_raw_adjusted.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=8, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_ms_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
+jpeg(filename = "exo_pos_1ms2_plots/EXO_pos_ms_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
 par(mfrow=c(2,1), mar=c(4.5,4.2,4,1), cex=0.8)
 plot(chromas_EXO_pos, peakType="none", main="Raw chromatograms")
 plotAdjustedRtime(ms_data_EXO_pos, lwd=2, main="Retention Time correction")
@@ -273,10 +274,10 @@ ms_data_EXO_pos <- groupChromPeaks(ms_data_EXO_pos, param=PeakDensityParam(
 # Get integrated peak intensity per feature/sample
 print(head(featureValues(ms_data_EXO_pos, value="into")))
 
-ppm <- 35  
+ppm <- 25  
 
 # missing value imputation, see xcmsSet
-ms_data_EXO_pos <- fillChromPeaks(ms_data_EXO_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
+#ms_data_EXO_pos <- fillChromPeaks(ms_data_EXO_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
 ms_data_EXO_pos
 
 head(featureValues(ms_data_EXO_pos))
@@ -286,20 +287,21 @@ head(featureSummary(ms_data_EXO_pos, group=ms_data_EXO_pos$sample_group))
 
 # Evaluate grouping
 #pdf(file="plots/EXO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_ms_grouping.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_1ms2_plots/EXO_pos_ms_grouping.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
 ms_pca_EXO_pos <- prcomp(t(na.omit(log2(featureValues(ms_data_EXO_pos, value="into")))), center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], pch=19, main="PCA: Grouping of samples",
      xlab=paste0("PC1: ", format(summary(ms_pca_EXO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms_pca_EXO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
-     col=color, cex=0.8)
+     col=color, cex=2)
 grid()
-text(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], labels=ms_data_EXO_pos$sample_name, col=color, pos=3, cex=0.9)
-legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch=20, 
+text(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], labels=str_sub(ms_data_EXO_pos$sample_name, - 3, - 1), col=color, pos=3, cex=0.9)
+legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(ms_data_EXO_pos@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
-png("exo_pos_plots/BrokenStick_EXO_pos_ms_grouping.png", width=10, height=6, units="in", res=100)
+png("exo_pos_1ms2_plots/BrokenStick_EXO_pos_ms_grouping.png", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -336,7 +338,7 @@ MS_EXO_pos_peak_detection <- ms_data_EXO_pos
 
 
 
-save(MS_EXO_pos_peak_detection, file = "exo_pos_Results/MS_EXO_pos_peak_detection.RData")
+save(MS_EXO_pos_peak_detection, file = "exo_pos_1ms2_Results/MS_EXO_pos_peak_detection.RData")
 
 # ---------- Build MS1 feature tables ----------
 # Build feature matrix
@@ -351,41 +353,46 @@ feat_list_EXO_pos
 # Build feature summary
 ms_summary_EXO_pos <- featureSummary(ms_data_EXO_pos)
 ms_def_EXO_pos <- featureDefinitions(ms_data_EXO_pos)
-
+save(ms_def_EXO_pos, file = "exo_pos_1ms2_Results/ms12_def_EXO_pos.RData") 
 
 # Missing value imputation by filling na positions with median of surrounding features
-feat_list_EXO_pos[is.na(feat_list_EXO_pos)] <- median(na.omit(as.numeric(unlist(feat_list_EXO_pos))))
+#feat_list_EXO_pos[is.na(feat_list_EXO_pos)] <- median(na.omit(as.numeric(unlist(feat_list_EXO_pos))))
+
 ### Transform data
 feat_list_EXO_pos <- log2(feat_list_EXO_pos)
 
-# Missing value imputation
-feat_list_EXO_pos[which(is.na(feat_list_EXO_pos))] <- median(na.omit(as.numeric(unlist(feat_list_EXO_pos))))
+# change 0 to small value to distinguish between values of 1 and NA
+feat_list_EXO_pos[which(feat_list_EXO_pos == 0)] <- 0.01
 
+# Missing value imputation
+feat_list_EXO_pos[which(is.na(feat_list_EXO_pos))] <- 0
+  
 # save as csv
-write.csv(feat_list_EXO_pos, file=paste(filename = "exo_pos_Results/feature_list_EXO_pos.csv", sep = ""))
+write.csv(feat_list_EXO_pos, file=paste(filename = "exo_pos_1ms2_Results/feature_list_EXO_pos.csv", sep = ""))
 
 # Plot histogram
 #pdf(file="plots/EXO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_1ms2_plots/EXO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
 hist(as.numeric(feat_list_EXO_pos), main="Histogram of feature table")
 dev.off()
 
 # PCA of feature table results
 #pdf(file="plots/EXO_ms1_feature_table_pca.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_ms_feature_table_pca.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
-ms_pca_EXO_pos <- prcomp(feat_list_EXO_pos, center=TRUE)
+jpeg(filename = "exo_pos_1ms2_plots/EXO_pos_ms_feature_table_pca_exc_MS2_MB.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+ms_pca_EXO_pos <- prcomp(feat_list_EXO_pos[1:24,], center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], pch=19, main="PCA of feature table",
      xlab=paste0("PC1: ", format(summary(ms_pca_EXO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms_pca_EXO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
-     col=color, cex=0.8)
+     col=color, cex=2)
 grid()
-text(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], labels=ms_data_EXO_pos$sample_name, col=color, pos=3, cex=0.9)
-legend("topleft", bty="n", pt.cex=1, cex=1, y.intersp=0.7, text.width=0.5, pch=20, 
+text(ms_pca_EXO_pos$x[, 1], ms_pca_EXO_pos$x[,2], labels=str_sub(ms_data_EXO_pos$sample_name[1:24,], - 3, - 1), col=color, pos=3, cex=0.9)
+legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(ms_data_EXO_pos@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
-jpeg("exo_pos_plots/BrokenStick_EXO_pos_ms_feature_table_pca.jpeg", width=10, height=6, units="in", res=100)
+jpeg("exo_pos_1ms2_plots/BrokenStick_EXO_pos_ms_feature_table_pca_exc_MB.jpeg", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -410,7 +417,7 @@ evplot(ev_pc)
 dev.off()
 
 
-ms_intensity_cutoff <- 100
+ms_intensity_cutoff <- 2000
 
 # Create single 0/1 matrix
 bina_list_EXO_pos <- t(ms_matrix_EXO_pos)
@@ -421,7 +428,7 @@ bina_list_EXO_pos[bina_list_EXO_pos != 0] <- 1
 
 
 # save as csv
-write.csv(bina_list_EXO_pos, file=paste(filename = "exo_pos_Results/bina_list_EXO_pos.csv", sep = ""))
+write.csv(bina_list_EXO_pos, file=paste(filename = "exo_pos_1ms2_Results/bina_list_EXO_pos.csv", sep = ""))
 
 # Only unique compounds in group mzml_pheno$ and not the others
 uniq_list_EXO_pos <- apply(X=bina_list_EXO_pos, MARGIN=2, FUN=function(x) { if (length(unique(pheno_data_EXO$sample_group[grepl("1", x)])) == 1) x else rep(0, length(x)) } )
@@ -445,7 +452,7 @@ model_div_EXO_pos$unique      <- apply(X=uniq_list_EXO_pos, MARGIN=1, FUN=functi
 model_div_EXO_pos[is.na(model_div_EXO_pos)] <- 0
 
 # save as csv
-write.csv(model_div_EXO_pos, file=paste(filename = "exo_pos_Results/model_div_EXO_pos.csv", sep = ""))
+write.csv(model_div_EXO_pos, file=paste(filename = "exo_pos_1ms2_Results/model_div_EXO_pos.csv", sep = ""))
 
 
 # save the objects and tables

@@ -162,8 +162,8 @@ raw_data_MS2_ENDO_pos <- list.files(input_dir_MS2, pattern = "ENDOpos")
 raw_data_MS2_ENDO_pos_files <- paste(input_dir_MS2, raw_data_MS2_ENDO_pos, sep ="")
 
 # combine all ENDO_pos files of MS1 and MS2
-all_files <- c(raw_data_MS1_ENDO_pos_files, raw_data_MS2_ENDO_pos_files)
-all_files_names <- c(raw_data_MS1_ENDO_pos, raw_data_MS2_ENDO_pos)
+files <- c(raw_data_MS1_ENDO_pos_files, raw_data_MS2_ENDO_pos_files)
+files_names <- c(raw_data_MS1_ENDO_pos, raw_data_MS2_ENDO_pos)
 
 # create output directory
 outpur_dir <- dir.create("Results_combined")
@@ -203,33 +203,50 @@ samp_groups_description <- c(CoCuPp_des, CoCuSm_des, CoCuSm_des, CoCuPp_des, CoC
 samp_groups_description_all <- c(samp_groups_description, rep(x = MS2_des, times = 5))
 
 # create vector with colors 
-CoCuPp1 <- ("royalblue4")
-CoCuSm1 <- rep("darksalmon", 2)
-CoCuPp2 <- rep("royalblue4", 2)
-CoCuSm2 <- ("darksalmon")
-Sm <- rep("violetred", 8)
-Pp <- rep("yellow2", 8)
-CoCuSm3 <- ("darksalmon")
-CoCuPp3 <- ("royalblue4")
-MB <- rep("springgreen", 1)
+CoCuPp1 <- ("#3E134F")
+CoCuSm1 <- rep("#F36E35", 2)
+CoCuPp2 <- rep("#3E134F", 2)
+CoCuSm2 <- ("#F36E35")
+Sm <- rep("#F8B83C", 8)
+Pp <- rep("#C53270", 8)
+CoCuSm3 <- ("#F36E35")
+CoCuPp3 <- ("#3E134F")
+MB <- rep("#040404", 1)
 # with MS2 samples
-MS2 <- rep("purple", 5)
+MS2 <- rep("#851170", 5)
 
 color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB)
 # with MS2 samples
 color_all <- c(color, MS2)
 
+
 # create phenodata based on culture type
 pheno_data_EXO <- data.frame(sample_name = MS1_EXO_names, sample_group = samp_groups, samp_groups_description = samp_groups_description)
 pheno_color_EXO <- data.frame(color)
+
+# create variables to store condition name in
+con_1 <- "ENDO"   # ENDO or EXO
+pol_2 <- "neg"    # neg or pos
+ms_3 <- "ms2"     # if ms2 files are present
+all_4 <- "all"    # if ms2 files are present
+
+test <- sprintf("Results_%s_%s", con_1, pol_2)
+
+# Create phenodata base on culture type
+#create_pheno_data <- function(sample_name, sample_group, sample_groups_description)
+#  if (attr(sample_name, "ENDO") == TRUE) {
+#        return(data.frame(sample_name, sample_group, sample_groups_description))
+#  }
+
+
 # with MS2 samples
-pheno_data_all_ENDO <- data.frame(sample_name = all_files_names, sample_group = samp_groups_all, samp_groups_description = samp_groups_description_all)
-pheno_color_all_ENDO <- data.frame(color_all)
+#pheno_data_ENDO <- data.frame(sample_name = files_names, sample_group = samp_groups_all, samp_groups_description = samp_groups_description_all)
+#pheno_color_ENDO <- data.frame(color_all)
 
 #stop first
 #please check the directory where it should be saved
 dir_MS1_EXO <- "./MAW-Co-culture/Results"
-write.csv(pheno_data_all_ENDO, file = paste(getwd(), "/Results_combined/pheno_data_all_ENDO.csv", sep =""))
+write.csv(pheno_data_EXO, file = paste(getwd(), "/Results/pheno_data_EXO.csv", sep =""))
 
 # Display MSn levels and check amount of spectra
 # mzml_msn_ENDO <- NULL
@@ -260,8 +277,8 @@ MS1_EXO_pos_files <- list.files(input_dir_MS1_polarity, pattern = "_pos_EXO")
 # Import raw data as MSnbase object OnDiskMsnExp
 
 # with MS2 data
-msd <- readMSData(files = paste(all_files, sep = ""),
-                  pdata = new("NAnnotatedDataFrame",pheno_data_all_ENDO),
+msd <- readMSData(files = paste(input_dir_MS1_polarity, MS1_EXO_pos_files, sep = ""),
+                  pdata = new("NAnnotatedDataFrame",pheno_data_EXO),
                   mode = "onDisk",
                   centroided = TRUE)
 
@@ -278,7 +295,7 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
                     "polarity", "retentionTime")])
 
 # for MS2 data subset polarity again to pos = 1
-msd <- filterPolarity(msd, polarity = 1)
+#msd <- filterPolarity(msd, polarity = 1)
 
 # Restrict data to 1020 seconds (17 minutes)
 msd <- filterRt(msd, c(0, 1020))
@@ -286,7 +303,7 @@ msd <- filterRt(msd, c(0, 1020))
 # subset data for msLevel = 1 and save raw data
 # msd <- filterMsLevel(msd, msLevel = 1)
 table(msLevel(msd))
-write.csv(fData(msd), file=paste(filename = "Results_combined/all_ENDO_pos_raw_data.csv", sep = ""), row.names=FALSE)
+write.csv(fData(msd), file=paste(filename = "Results_combined/ENDO_pos_raw_data.csv", sep = ""), row.names=FALSE)
 
 # # Inspect mz values per file
 # msd_mz <- mz(msd)
@@ -296,147 +313,213 @@ write.csv(fData(msd), file=paste(filename = "Results_combined/all_ENDO_pos_raw_d
 # Get base peak chromatograms
 register(bpstart(SnowParam()))
 # setwd(input_dir_MS1_polarity)
-chromas_all_ENDO_pos <- chromatogram(msd, 
+chromas_ENDO_pos <- chromatogram(msd, 
                              aggregationFun="max", 
-                             #msLevel = 1, not for all_files
-                             BPPARAM = SnowParam(workers = 3))
+                             #msLevel = 1, not for files
+                             )
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/ENDO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots_combined/all_ENDO_chromas_pos.jpeg", width = 1000, height = 600, quality = 150, bg = "white")
-par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=1.5)
-plot(chromas_all_ENDO_pos, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
-legend("topleft", bty="n", pt.cex=2, cex=0.9, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(color_all), legend= unique(msd@phenoData@data[["sample_group"]]))
+jpeg(filename = "plots_combined/ENDO_chromas_pos.jpeg", width = 2000, height = 1200, quality = 150, bg = "white")
+par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
+plot(chromas_ENDO_pos, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
+legend("topleft", bty="n", pt.cex=3, cex=1.5, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color), legend= unique(msd@phenoData@data[["sample_group"]]))
 dev.off()
 
 # Get TICs
 #pdf(file="plots/ENDO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots_combined/all_ENDO_tics_pos.jpeg", width = 1000, height = 600, quality = 150, bg = "white")
-par(mfrow=c(1,1), mar=c(5,4,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=1.5, cex.lab=2, cex.main=2)
-tics_all_ENDO_pos <- split(tic(msd), f=fromFile(msd))
-boxplot(tics_all_ENDO_pos, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
-legend("topleft", bty="n", pt.cex=2, cex=0.9, y.intersp=0.7, text.width=0.5, pch=20, 
+jpeg(filename = "plots_combined/ENDO_tics_pos.jpeg", width = 1000, height = 600, quality = 150, bg = "white")
+par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
+tics_ENDO_pos <- split(tic(msd), f=fromFile(msd))
+boxplot(tics_ENDO_pos, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
+legend("topleft", bty="n", pt.cex=2, cex=1, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(msd@phenoData@data[["sample_group"]]))
 dev.off()
 
 ### ---- pre-processing ----
 
 # grouping/binning for peak detection, based on similarity of the base peak chromatogram 
-chromas_bin_all_ENDO_pos <- MSnbase::bin(chromas_all_ENDO_pos, binSize=2)
-chromas_bin_cor_all_ENDO_pos <- cor(log2(do.call(cbind, lapply(chromas_bin_all_ENDO_pos, intensity)))) # transformation with log
-colnames(chromas_bin_cor_all_ENDO_pos) <- rownames(chromas_bin_cor_all_ENDO_pos) <- msd$sample_name
-chromas_bin_cor_all_ENDO_pos[is.na(chromas_bin_cor_all_ENDO_pos)] <- 0
+chromas_bin_ENDO_pos <- MSnbase::bin(chromas_ENDO_pos, binSize=2)
+chromas_bin_cor_ENDO_pos <- cor(log2(do.call(cbind, lapply(chromas_bin_ENDO_pos, intensity)))) # transformation with log
+colnames(chromas_bin_cor_ENDO_pos) <- rownames(chromas_bin_cor_ENDO_pos) <- msd$sample_name
+chromas_bin_cor_ENDO_pos[is.na(chromas_bin_cor_ENDO_pos)] <- 0
 
 # representing the data in a heatmap for general overview
 #pdf(file="plots/heatmap_chromas_bin_ENDO.pdf", encoding="ISOLatin1", pointsize=10, width=6, 
 #    height=4, family="Helvetica")
-jpeg(filename = "plots_combined/heatmap_chromas_bin_all_ENDO_pos.jpeg", width = 500, height = 500, quality = 150, bg = "white")
-par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
-heatmap(chromas_bin_cor_all_ENDO_pos)
+jpeg(filename = "plots_combined/heatmap_chromas_bin_ENDO_pos.jpeg", width = 500, height = 500, quality = 150, bg = "white")
+par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(7,0,0,7), cex.axis=0.9, cex=0.6)
+heatmap(chromas_bin_cor_ENDO_pos)
 dev.off()
 
 # Assess retention times and intensities of first file
-head(rtime(chromas_all_ENDO_pos[1, 1]))
-head(intensity(chromas_all_ENDO_pos[1, 1]))
+head(rtime(chromas_ENDO_pos[1, 1]))
+head(intensity(chromas_ENDO_pos[1, 1]))
 
 # check for polarity
 head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
 table(polarity(msd))
 
+
 #--- parameters calculated with IPO ---
 # ENDO neg
-ms1_params_ENDO_neg <- CentWaveParam(ppm=39.5, mzCenterFun="wMean", peakwidth=c(14, 59), 
-                                     prefilter=c(3, 140), mzdiff=0.0155, snthresh=7, noise=0, 
-                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
-                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
+#ms1_params_ENDO_neg <- CentWaveParam(ppm=39.5, mzCenterFun="wMean", peakwidth=c(14, 59), 
+#                                     prefilter=c(3, 140), mzdiff=0.0155, snthresh=7, noise=0, 
+#                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+#                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
 # ENDO pos
-ms1_params_ENDO_pos <- CentWaveParam(ppm=9.5, mzCenterFun="wMean", peakwidth=c(12, 51), 
-                                     prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
-                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
-                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
-# EXO neg and pos for now
-ms1_params_EXO_neg <- CentWaveParam(ppm=24.5, mzCenterFun="wMean", peakwidth=c(12, 53), 
-                                     prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
-                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
-                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
+#ms1_params_ENDO_pos <- CentWaveParam(ppm=9.5, mzCenterFun="wMean", peakwidth=c(12, 51), 
+#                                     prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
+#                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+#                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
+# EXO neg 
+#ms1_params_EXO_neg <- CentWaveParam(ppm=24.5, mzCenterFun="wMean", peakwidth=c(12, 53), 
+#                                     prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
+#                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+#                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
+# EXO pos 
+#ms1_params_EXO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(13, 51), 
+#                                    prefilter=c(2.6, 41), mzdiff= -0.0098, snthresh=5, noise=0, 
+#                                    integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+#                                    fitgauss=FALSE, roiList=list(), roiScales=numeric())
 
 # Peak detection in MS1 data
-# CHOSE THE PARAMETERS 
-ms1_data_all_ENDO_pos <- findChromPeaks(msd, param=ms1_params_EXO_neg)
+# define pre-processed data variable
+ms1_data_ENDO_pos <- NULL 
+condition_name <- deparse(substitute(ms1_data_ENDO_pos))
+condition_name
+
+# perform peak detection with corresponding parameters 
+#pick_peaks_f <- function(condition_name, obj) {
+if (condition_name == "ms1_data_EXO_neg") {
+  # set parameters
+  # EXO neg 
+  ms1_params_EXO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 53), 
+                                      prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
+                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
+  
+  # perform peak detection
+  ms1_data_EXO_neg <- findChromPeaks(msd, param=ms1_params_EXO_neg)
+  print("parameters for EXO neg used")
+  
+} else if (condition_name == "ms1_data_EXO_pos") {
+  # set parameters
+  # EXO pos 
+  ms1_params_EXO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(13, 51), 
+                                      prefilter=c(2.6, 41), mzdiff= -0.0098, snthresh=5, noise=0, 
+                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
+  # perform peak detection
+  ms1_data_EXO_pos <- findChromPeaks(msd, param=ms1_params_EXO_pos)
+  print("paramters for EXO pos used")
+  
+} else if (condition_name == "ms1_data_ENDO_neg") {
+  # set parameters
+  # ENDO neg
+  ms1_params_ENDO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(14, 59), 
+                                       prefilter=c(3, 140), mzdiff=0.0155, snthresh=7, noise=0, 
+                                       integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+                                       fitgauss=FALSE, roiList=list(), roiScales=numeric())
+  # perform peak detection
+  ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_ENDO_neg)
+  print("parameters for ENDO neg used")
+  
+} else if (condition_name == "ms1_data_ENDO_pos") {
+  # set parameters
+  # ENDO pos
+  ms1_params_ENDO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 51), 
+                                       prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
+                                       integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+                                       fitgauss=FALSE, roiList=list(), roiScales=numeric())
+  # perform peak detection
+  ms1_data_ENDO_pos <- findChromPeaks(msd, param=ms1_params_ENDO_pos)
+  print("parameters for ENDO pos used")
+  
+} else {
+  print("peak detection failed, check again")
+  
+}
+#}
+
+#ms1_data_ENDO_pos <- pick_peaks_f()
+
+
+ms1_data_ENDO_pos <- findChromPeaks(msd, param=ms1_params_EXO_neg)
 
 # check the detected peaks
-head(chromPeaks(ms1_data_all_ENDO_pos))
-chromPeakData(ms1_data_all_ENDO_pos)
+head(chromPeaks(ms1_data_ENDO_pos))
+chromPeakData(ms1_data_ENDO_pos)
 
 
 # Per file summary
-ms1_summary_all_ENDO_pos <- lapply(split.data.frame(chromPeaks(ms1_data_all_ENDO_pos), 
-                                            f=chromPeaks(ms1_data_all_ENDO_pos)[, "sample"]), 
+ms1_summary_ENDO_pos <- lapply(split.data.frame(chromPeaks(ms1_data_ENDO_pos), 
+                                            f=chromPeaks(ms1_data_ENDO_pos)[, "sample"]), 
                            FUN=function(z) { c(peak_count=nrow(z), rt=quantile(z[, "rtmax"] - z[, "rtmin"])) } )
-ms1_summary_all_ENDO_pos <- do.call(rbind, ms1_summary_all_ENDO_pos)
-rownames(ms1_summary_all_ENDO_pos) <- basename(fileNames(ms1_data_all_ENDO_pos))
-print(ms1_summary_all_ENDO_pos)
-table(msLevel(ms1_data_all_ENDO_pos))
+ms1_summary_ENDO_pos <- do.call(rbind, ms1_summary_ENDO_pos)
+rownames(ms1_summary_ENDO_pos) <- basename(fileNames(ms1_data_ENDO_pos))
+print(ms1_summary_ENDO_pos)
+table(msLevel(ms1_data_ENDO_pos))
 
-write.csv(as.data.frame(table(msLevel(ms1_data_all_ENDO_pos))), file="Results_combined/all_ENDO_pos_ms1_data.csv", row.names=FALSE)
+write.csv(as.data.frame(table(msLevel(ms1_data_ENDO_pos))), file="Results_combined/ENDO_pos_ms1_data.csv", row.names=FALSE)
 
 
 # To get a global overview of the peak detection we can plot the frequency of identified peaks per file along the retention time axis. 
 # This allows to identify time periods along the MS run in which a higher number of peaks was identified and evaluate whether this is consistent across files.
 #pdf(file="plots/ENDO_ms1_data.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots_combined/all_ENDO_pos_ms1_data.jpeg", width = 1000, height = 600, quality = 150, bg = "white")
-par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
-plotChromPeakImage(ms1_data_all_ENDO_pos, main="Frequency of identified peaks per RT", binSize = 10)
+jpeg(filename = "plots_combined/ENDO_pos_ms1_data.jpeg", width = 1000, height = 600, quality = 150, bg = "white")
+par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=1, cex=2, cex.lab=2, cex.main=2)
+plotChromPeakImage(ms1_data_ENDO_pos, main="Frequency of identified peaks per RT", binSize = 20)
 dev.off()
 
 
 ## Group peaks
-ms1_data_all_ENDO_pos <- groupChromPeaks(ms1_data_all_ENDO_pos, param=PeakDensityParam(
-  sampleGroups=ms1_data_all_ENDO_pos$sample_group, minFraction=0.7, bw=2.5))
+ms1_data_ENDO_pos <- groupChromPeaks(ms1_data_ENDO_pos, param=PeakDensityParam(
+  sampleGroups=ms1_data_ENDO_pos$sample_group, minFraction=0.7, bw=2.5))
 
 ## RT correction
-ms1_data_all_ENDO_pos <- adjustRtime(ms1_data_all_ENDO_pos, param=PeakGroupsParam(
+ms1_data_ENDO_pos <- adjustRtime(ms1_data_ENDO_pos, param=PeakGroupsParam(
   minFraction=0.7,smooth="loess",span=0.8,family="gaussian"))
 
 # Plot the difference of raw and adjusted retention times
 #pdf(file="plots/ENDO_ms1_raw_adjusted.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=8, family="Helvetica")
-jpeg(filename = "plots_combined/all_ENDO_pos_ms1_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
+jpeg(filename = "plots_combined/ENDO_pos_ms1_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
 par(mfrow=c(2,1), mar=c(4.5,4.2,4,1), cex=0.8)
-plot(chromas_all_ENDO_pos, peakType="none", main="Raw chromatograms")
-plotAdjustedRtime(ms1_data_all_ENDO_pos, lwd=2, main="Retention Time correction")
+plot(chromas_ENDO_pos, peakType="none", main="Raw chromatograms")
+plotAdjustedRtime(ms1_data_ENDO_pos, lwd=2, main="Retention Time correction")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.8)
 dev.off()
 
 ## Group peaks
-ms1_data_all_ENDO_pos <- groupChromPeaks(ms1_data_all_ENDO_pos, param=PeakDensityParam(
-  sampleGroups=ms1_data_all_ENDO_pos$sample_group, minFraction=0.7, bw=2.5))
+ms1_data_ENDO_pos <- groupChromPeaks(ms1_data_ENDO_pos, param=PeakDensityParam(
+  sampleGroups=ms1_data_ENDO_pos$sample_group, minFraction=0.7, bw=2.5))
 
 # Get integrated peak intensity per feature/sample
-print(head(featureValues(ms1_data_all_ENDO_pos, value="into")))
+print(head(featureValues(ms1_data_ENDO_pos, value="into")))
 
 ## Fill peaks
 # missing value imputation, see xcmsSet
-ms1_data_all_ENDO_pos <- fillChromPeaks(ms1_data_all_ENDO_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
-head(featureValues(ms1_data_all_ENDO_pos))
-head(featureSummary(ms1_data_all_ENDO_pos, group=ms1_data_all_ENDO_pos$sample_group))
+#ms1_data_ENDO_pos <- fillChromPeaks(ms1_data_ENDO_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
+head(featureValues(ms1_data_ENDO_pos))
+head(featureSummary(ms1_data_ENDO_pos, group=ms1_data_ENDO_pos$sample_group))
 
 # Evaluate grouping
 #pdf(file="plots/ENDO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots_combined/all_ENDO_pos_ms1_grouping.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
-ms1_pca_all_ENDO_pos <- prcomp(t(na.omit(log2(featureValues(ms1_data_all_ENDO_pos, value="into")))), center=TRUE)
-plot(ms1_pca_all_ENDO_pos$x[, 1], ms1_pca_all_ENDO_pos$x[,2], pch=19, main="PCA: Grouping of samples",
-     xlab=paste0("PC1: ", format(summary(ms1_pca_all_ENDO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
-     ylab=paste0("PC2: ", format(summary(ms1_pca_all_ENDO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
+jpeg(filename = "plots_combined/ENDO_pos_ms1_grouping.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+ms1_pca_ENDO_pos <- prcomp(t(na.omit(log2(featureValues(ms1_data_ENDO_pos, value="into")))), center=TRUE)
+plot(ms1_pca_ENDO_pos$x[, 1], ms1_pca_ENDO_pos$x[,2], pch=19, main="PCA: Grouping of samples",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
      col=color, cex=0.8)
 grid()
-text(ms1_pca_all_ENDO_pos$x[, 1], ms1_pca_all_ENDO_pos$x[,2], labels=ms1_data_all_ENDO_pos$sample_name, col=color, pos=3, cex=0.9)
+text(ms1_pca_ENDO_pos$x[, 1], ms1_pca_ENDO_pos$x[,2], labels=ms1_data_ENDO_pos$sample_name, col=color, pos=3, cex=0.9)
 legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(color), legend= unique(ms1_data_all_ENDO_pos@phenoData@data[["sample_group"]]))
+       col= unique(color), legend= unique(ms1_data_ENDO_pos@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
-png("plots/BrokenStick_all_ENDO_pos_ms1_grouping.png", width=10, height=6, units="in", res=100)
+png("plots/BrokenStick_ENDO_pos_ms1_grouping.png", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -456,69 +539,74 @@ evplot = function(ev) {
   par(op)  
 } 
 
-ev_pc = ms1_pca_all_ENDO_pos$sdev^2  
+ev_pc = ms1_pca_ENDO_pos$sdev^2  
 evplot(ev_pc)  
 dev.off()
 
 
 # Show peaks
-tail(chromPeaks(ms1_data_all_ENDO_pos))
-tail(chromPeakData(ms1_data_all_ENDO_pos))
+tail(chromPeaks(ms1_data_ENDO_pos))
+tail(chromPeakData(ms1_data_ENDO_pos))
 
 # Show process history
-processHistory(ms1_data_all_ENDO_pos)
+processHistory(ms1_data_ENDO_pos)
+processHistory(ms1_data_ENDO_pos)
 
 # save as R object for later use
-MS1_all_ENDO_pos_peak_detection <- ms1_data_all_ENDO_pos
-save(MS1_all_ENDO_pos_peak_detection, file = "Results_combined/MS1_all_ENDO_pos_peak_detection.RData")
+MS1_ENDO_pos_peak_detection <- ms1_data_ENDO_pos
+save(MS1_ENDO_pos_peak_detection, file = "Results_combined/MS1_ENDO_pos_peak_detection.RData")
 
 
 # ---------- Build MS1 feature tables ----------
 # Build feature matrix
-ms1_matrix_all_ENDO_pos <- featureValues(ms1_data_all_ENDO_pos, method="medret", value="into")
-colnames(ms1_matrix_all_ENDO_pos) <- MS1_EXO_names
-dim(ms1_matrix_all_ENDO_pos)
+ms1_matrix_ENDO_pos <- featureValues(ms1_data_ENDO_pos, method="medret", value="into")
+colnames(ms1_matrix_ENDO_pos) <- MS1_EXO_names
+dim(ms1_matrix_ENDO_pos)
 # transpose feature table
-feat_list_all_ENDO_pos <- t(ms1_matrix_all_ENDO_pos)
+feat_list_ENDO_pos <- t(ms1_matrix_ENDO_pos)
 
 # Build feature summary
-ms1_summary_all_ENDO_pos <- featureSummary(ms1_data_all_ENDO_pos)
-ms1_def_all_ENDO_pos <- featureDefinitions(ms1_data_all_ENDO_pos)
+ms1_summary_ENDO_pos <- featureSummary(ms1_data_ENDO_pos)
+ms1_def_ENDO_pos <- featureDefinitions(ms1_data_ENDO_pos)
 
 # Missing value imputation by filling na positions with median of surrounding features
-feat_list_all_ENDO_pos[is.na(feat_list_all_ENDO_pos)] <- median(na.omit(as.numeric(unlist(feat_list_all_ENDO_pos))))
+#feat_list_ENDO_pos[is.na(feat_list_ENDO_pos)] <- median(na.omit(as.numeric(unlist(feat_list_ENDO_pos))))
 
 ### Transform data
-feat_list_all_ENDO_pos <- log2(feat_list_all_ENDO_pos)
+feat_list_ENDO_pos <- log2(feat_list_ENDO_pos)
+
+# change 0 to small value to distinguish between values of 1 and NA
+feat_list_ENDO_neg[which(feat_list_ENDO_neg == 0)] <- 0.01
 
 # Missing value imputation
-feat_list_all_ENDO_pos[which(is.na(feat_list_all_ENDO_pos))] <- median(na.omit(as.numeric(unlist(feat_list_all_ENDO_pos))))
+#feat_list_ENDO_pos[which(is.na(feat_list_ENDO_pos))] <- median(na.omit(as.numeric(unlist(feat_list_ENDO_pos))))
+feat_list_ENDO_pos[which(is.na(feat_list_ENDO_pos))] <- 0
 
 # save as csv
-write.csv(feat_list_all_ENDO_pos, file=paste(filename = "Results_combined/feature_list_all_ENDO_pos.csv", sep = ""))
+write.csv(feat_list_ENDO_pos, file=paste(filename = "Results_combined/feature_list_ENDO_pos.csv", sep = ""))
 
 # Plot histogram
 #pdf(file="plots_combined/ENDO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots_combined/all_ENDO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
-hist(as.numeric(feat_list_all_ENDO_pos), main="Histogram of feature table")
+jpeg(filename = "plots_combined/ENDO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
+hist(as.numeric(feat_list_ENDO_pos), main="Histogram of feature table")
 dev.off()
 
 # PCA of feature table results
 #pdf(file="plots/ENDO_ms1_feature_table_pca.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "plots_combined/all_ENDO_pos_ms1_feature_table_pca_exc_MB.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
-ms1_pca_all_ENDO_pos <- prcomp(feat_list_all_ENDO_pos[1:24,], center=TRUE)
-plot(ms1_pca_all_ENDO_pos$x[, 1], ms1_pca_all_ENDO_pos$x[,2], pch=19, main="PCA of feature table",
-     xlab=paste0("PC1: ", format(summary(ms1_pca_all_ENDO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
-     ylab=paste0("PC2: ", format(summary(ms1_pca_all_ENDO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
+jpeg(filename = "plots_combined/ENDO_pos_ms1_feature_table_pca_exc_MB.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+ms1_pca_ENDO_pos <- prcomp(feat_list_ENDO_pos[1:24,], center=TRUE)
+plot(ms1_pca_ENDO_pos$x[, 1], ms1_pca_ENDO_pos$x[,2], pch=19, main="PCA of feature table",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
      col=color, cex=0.8)
 grid()
-text(ms1_pca_all_ENDO_pos$x[,1], ms1_pca_all_ENDO_pos$x[,2], labels=ms1_data_all_ENDO_pos$sample_name[1:24], col=color, pos=3, cex=0.9)
+text(ms1_pca_ENDO_pos$x[,1], ms1_pca_ENDO_pos$x[,2], labels=ms1_data_ENDO_pos$sample_name[1:24], col=color, pos=3, cex=0.9)
 legend("topleft", bty="n", pt.cex=1, cex=1, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(color), legend= unique(ms1_data_all_ENDO_pos@phenoData@data[["sample_group"]]))
+       col= unique(color), legend= unique(ms1_data_ENDO_pos@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
-jpeg("plots_combined/BrokenStick_all_ENDO_pos_ms1_feature_table_pca_exc_MB.jpeg", width=10, height=6, units="in", res=100)
+jpeg("plots_combined/BrokenStick_ENDO_pos_ms1_feature_table_pca_exc_MB.jpeg", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -538,44 +626,48 @@ evplot = function(ev) {
   par(op)  
 } 
 
-ev_pc = ms1_pca_all_ENDO_pos$sdev^2  
+ev_pc = ms1_pca_ENDO_pos$sdev^2  
 evplot(ev_pc)  
 dev.off()
 
 # Create single 0/1 matrix
-bina_list_all_ENDO_pos <- t(ms1_matrix_all_ENDO_pos)
-bina_list_all_ENDO_pos[is.na(bina_list_all_ENDO_pos)] <- 1
-bina_list_all_ENDO_pos <- log2(bina_list_all_ENDO_pos)
-bina_list_all_ENDO_pos[bina_list_all_ENDO_pos < log2(ms1_intensity_cutoff)] <- 0
-bina_list_all_ENDO_pos[bina_list_all_ENDO_pos != 0] <- 1
+bina_list_ENDO_pos <- t(ms1_matrix_ENDO_pos)
+bina_list_ENDO_pos[is.na(bina_list_ENDO_pos)] <- 1
+bina_list_ENDO_pos <- log2(bina_list_ENDO_pos)
+bina_list_ENDO_pos[bina_list_ENDO_pos < log2(ms1_intensity_cutoff)] <- 0
+bina_list_ENDO_pos[bina_list_ENDO_pos != 0] <- 1
 
 # save as csv
-write.csv(bina_list_all_ENDO_pos, file=paste(filename = "Results_combined/bina_list_all_ENDO_pos.csv", sep = ""))
+write.csv(bina_list_ENDO_pos, file=paste(filename = "Results_combined/bina_list_ENDO_pos.csv", sep = ""))
 
 # Only unique compounds in group mzml_pheno$ and not the others
-uniq_list_all_ENDO_pos <- apply(X=bina_list_all_ENDO_pos, MARGIN=2, FUN=function(x) { if (length(unique(pheno_data_EXO$sample_group[grepl("1", x)])) == 1) x else rep(0, length(x)) } )
-colnames(uniq_list_all_ENDO_pos) <- colnames(bina_list_all_ENDO_pos)
-rownames(uniq_list_all_ENDO_pos) <- rownames(bina_list_all_ENDO_pos)
+uniq_list_ENDO_pos <- apply(X=bina_list_ENDO_pos, MARGIN=2, FUN=function(x) { if (length(unique(pheno_data_EXO$sample_group[grepl("1", x)])) == 1) x else rep(0, length(x)) } )
+colnames(uniq_list_ENDO_pos) <- colnames(bina_list_ENDO_pos)
+rownames(uniq_list_ENDO_pos) <- rownames(bina_list_ENDO_pos)
 
 ## unique list is empty, what happend there?
 
 # Create data frame
-model_div_all_ENDO_pos             <- data.frame(features=apply(X=bina_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { sum(x) } ))
-model_div_all_ENDO_pos$richness    <- apply(X=bina_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { sum(x) } )
-#model_div_all_ENDO_pos$menhinick   <- apply(X=bina_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { menhinick.diversity(x) } )
-model_div_all_ENDO_pos$shannon     <- apply(X=feat_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
-model_div_all_ENDO_pos$pielou      <- apply(X=scale(feat_list_all_ENDO_pos, center=F), MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") / log(vegan::specnumber(x)) })
-#model_div_all_ENDO_pos$chao        <- vegan::specpool2vect(X=vegan::specpool(feat_list_all_ENDO_pos, species), index="chao")
-model_div_all_ENDO_pos$simpson     <- apply(X=feat_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="simpson") })
-model_div_all_ENDO_pos$inverse     <- apply(X=feat_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="inv") })
-model_div_all_ENDO_pos$fisher      <- apply(X=feat_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
-model_div_all_ENDO_pos$unique      <- apply(X=uniq_list_all_ENDO_pos, MARGIN=1, FUN=function(x) { sum(x) })
+model_div_ENDO_pos             <- data.frame(features=apply(X=bina_list_ENDO_pos, MARGIN=1, FUN=function(x) { sum(x) } ))
+model_div_ENDO_pos$richness    <- apply(X=bina_list_ENDO_pos, MARGIN=1, FUN=function(x) { sum(x) } )
+#model_div_ENDO_pos$menhinick   <- apply(X=bina_list_ENDO_pos, MARGIN=1, FUN=function(x) { menhinick.diversity(x) } )
+model_div_ENDO_pos$shannon     <- apply(X=feat_list_ENDO_pos, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
+model_div_ENDO_pos$pielou      <- apply(X=scale(feat_list_ENDO_pos, center=F), MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") / log(vegan::specnumber(x)) })
+#model_div_ENDO_pos$chao        <- vegan::specpool2vect(X=vegan::specpool(feat_list_ENDO_pos, species), index="chao")
+model_div_ENDO_pos$simpson     <- apply(X=feat_list_ENDO_pos, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="simpson") })
+model_div_ENDO_pos$inverse     <- apply(X=feat_list_ENDO_pos, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="inv") })
+model_div_ENDO_pos$fisher      <- apply(X=feat_list_ENDO_pos, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
+model_div_ENDO_pos$unique      <- apply(X=uniq_list_ENDO_pos, MARGIN=1, FUN=function(x) { sum(x) })
+# functional hill diversity
+model_div_pos$hillfunc    <- as.numeric(unlist(calcDiv(feat_list_pos, compDisMat=scales::rescale(as.matrix(dist(t(feat_list_pos)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
+
+
 
 # Remove NAs if present
-model_div_all_ENDO_pos[is.na(model_div_all_ENDO_pos)] <- 0
+model_div_ENDO_pos[is.na(model_div_ENDO_pos)] <- 0
 
 # save as csv
-write.csv(model_div_all_ENDO_pos, file=paste(filename = "Results_combined/model_div_all_ENDO_pos.csv", sep = ""))
+write.csv(model_div_ENDO_pos, file=paste(filename = "Results_combined/model_div_ENDO_pos.csv", sep = ""))
 
 
 # save the objects and tables
@@ -586,5 +678,107 @@ end.time <- Sys.time()
 
 time.taken <- end.time - start.time
 print(time.taken)
+
+# MS1 and MS2 files in one
+ms12_data_ENDO_pos <- MS_ENDO_pos_peak_detection
+table(msLevel(ms12_data_ENDO_pos))
+
+# ---------- MS2 spectra detection ----------
+# Estimate precursor intensity
+precursor_intensity_ENDO_pos <- estimatePrecursorIntensity(ms12_data_ENDO_pos)
+print(head(na.omit(precursor_intensity_ENDO_pos)))
+
+# Reconstruct MS2 spectra from MS1 data
+ms2_data_ENDO_pos <- chromPeakSpectra(ms12_data_ENDO_pos, msLevel=2L, return.type="Spectra")
+print(ms2_data_ENDO_pos)
+print(length(ms2_data_neg$peak_id))
+
+
+# ---------- MS2 spectra detection ----------
+# Estimate precursor intensity
+#precursor_intensity_ENDO_pos <- xcms::estimatePrecursorIntensity(ms_data_ENDO_pos)
+#print(head(na.omit(precursor_intensity_ENDO_pos)))
+
+# Reconstruct MS2 spectra from MS1 data
+ms2_data_ENDO_pos <- chromPeakSpectra(ms_data_ENDO_pos, msLevel=2L, return.type="Spectra")
+print(ms2_data_ENDO_pos)
+print(length(ms2_data_ENDO_pos$peak_id))
+
+# Extract all usable MS2 spectra
+ms2_spectra_ENDO_pos <- list()
+for (i in 1:nrow(ms_def_ENDO_pos)) {
+  #ms2_spectra_ENDO_pos <- foreach(i=1:nrow(ms_def_ENDO_pos)) %dopar% {
+  #print(i)
+  # Extract existing MS2 spectra for feature
+  feature_of_interest <- ms_def_ENDO_pos[i, "mzmed"]
+  peaks_of_interest <- chromPeaks(ms_data_ENDO_pos, mz=feature_of_interest, ppm=ppm)
+  
+  # Continue if feature has MS2 peaks
+  if (length(which(ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest))) > 0) {
+    # Extract spectra
+    spectra_of_interest <- ms2_data_ENDO_pos[ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest)]
+    combined_spectra_of_interest <- filterIntensity(spectra_of_interest, intensity=c(1,Inf), backend=MsBackendDataFrame)
+    combined_spectra_of_interest <- setBackend(combined_spectra_of_interest, backend=MsBackendDataFrame())
+    
+    # Combine spectra
+    combined_spectra_of_interest <- Spectra::combineSpectra(combined_spectra_of_interest, FUN=combinePeaks, ppm=ppm, peaks="union", minProp=0.8, intensityFun=median, mzFun=median, backend=MsBackendDataFrame)#f=rownames(peaks_of_interest))
+    
+    # Remove noise from spectra
+    #combined_spectra_of_interest <- pickPeaks(combined_spectra_of_interest, snr=1.0, method="SuperSmoother") #MAD
+    #combined_spectra_of_interest <- Spectra::smooth(combined_spectra_of_interest, method="SavitzkyGolay") #(Weighted)MovingAverage
+    
+    # Only keep spectral data
+    combined_spectra_peaks <- as.data.frame(Spectra::peaksData(combined_spectra_of_interest)[[1]])
+    
+    # Plot merged spectrum
+    #Spectra::plotSpectra(combined_spectra_of_interest)
+    #plot(x=combined_spectra_peaks[,1], y=combined_spectra_peaks[,2], type="h", xlab="m/z", ylab="intensity", main=paste("Precursor m/z",combined_spectra_of_interest@backend@spectraData$precursorMz[[1]]))
+    #length(spectra_of_interest$peak_id)
+    
+    ms2_spectra_ENDO_pos[[i]] <- combined_spectra_of_interest
+    #return(combined_spectra_of_interest)
+  }
+}
+
+# Remove empty spectra
+names(ms2_spectra_ENDO_pos) <- rownames(ms_def_ENDO_pos)[1:length(ms2_spectra_ENDO_pos)]
+ms2_spectra_ENDO_pos <- ms2_spectra_ENDO_pos[lengths(ms2_spectra_ENDO_pos) != 0]
+
+# Relate all MS2 spectra to MS1 precursors
+ms_def_ENDO_pos$has_ms2 <- as.integer(rownames(ms_def_ENDO_pos) %in% names(ms2_spectra_ENDO_pos))
+print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms_def_ENDO_pos$has_ms2>0))))
+
+# ADDED
+polarity="positive"
+pol="pos"
+
+# Save all MS2 spectra in MGF file
+mgf_text <- NULL
+for (i in names(ms2_spectra_ENDO_pos)) {
+  mgf_text <- c(mgf_text, paste0("COM=", i))
+  mgf_text <- c(mgf_text, "BEGIN IONS")
+  mgf_text <- c(mgf_text, "MSLEVEL=2")
+  mgf_text <- c(mgf_text, paste0("TITLE=", i))
+  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms_def_ENDO_pos[i, "rtmed"]))
+  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms_def_ENDO_pos[i, "mzmed"]))
+  if (polarity == "positive") {
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
+  } else {
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
+  }
+  mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$intensity, sep=" "))
+  mgf_text <- c(mgf_text, "END IONS")
+  mgf_text <- c(mgf_text, "")
+}
+
+# Write MGF file
+cat(mgf_text, file="ms2_spectra_ENDO_pos.mgf", sep="\n")
+
+
+
+
+
+
+
 
 

@@ -4,23 +4,36 @@
 # Ms2 data relation to MS1 precursors and preparation for annotation by MAW
 
 ###---- library ----
-
-
-library(Spectra)
-library(xcms)
-library(mzR)
-library(MSnbase)
-library(faahKO)
-library(RColorBrewer)
-library(pander)
-library(magrittr)
-library(pheatmap)
-library(SummarizedExperiment)
-library(knitr)
-library(ggplot2)
+# Load libraries
+library(parallel)               # Detect number of cpu cores
+library(foreach)                # For multicore parallel
+library(doMC)                   # For multicore parallel
+library(RColorBrewer)           # For colors
+library(MSnbase)                # MS features
+library(xcms)                   # Swiss army knife for metabolomics
+library(CAMERA)                 # Metabolite Profile Annotation
+library(Spectra)                # Spectra package needed for XCMS3
 library(vegan)
+library(multcomp)               # For Tukey test
+library(Hmisc)                  # For correlation test
+library(gplots)                 # For fancy heatmaps
+library(circlize)               # For sunburst plot
+library(plotrix)                # For sunburst plot
+library(caret)                  # Swiss-army knife for statistics
+library(pROC)                   # Evaluation metrics
+library(PRROC)                  # Evaluation metrics
+library(multiROC)               # Evaluation metrics
+library(chemodiv)               # Chemodiversity (Petren 2022)
+library(rcdk)                   # CDK
+library(rinchi)                 # Converting SMILES to InchiKey
+library(plotly)                 # For creating html plots
+library(htmlwidgets)            # For creating html plots
+library(shiny)                  # HTML in R
+library(sunburstR)              # HTML-sunburst plots
+library(heatmaply)              # HTML heatmaps
 library(stringr)
-library(CAMERA)
+#library(iESTIMATE)
+source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
 ###------parallelization----
 
@@ -69,7 +82,7 @@ MS2_files <- list.files(input_dir_MS2, pattern = ".mzML")
 # MS2_ENDO_neg_files <- data.frame(subset(MS2_ENDO_files, grepl("neg", MS2_ENDO_files[,1]), drop = TRUE))
 # MS2_ENDO_neg_files <- data.frame(subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files[,1]), drop = TRUE))
 MS2_ENDO_files <- subset(MS2_files, grepl("ENDO", MS2_files))
-MS2_ENDO_neg_files <- subset(MS2_ENDO_files, grepl("neg", MS2_ENDO_files))
+#MS2_ENDO_neg_files <- subset(MS2_ENDO_files, grepl("neg", MS2_ENDO_files))
 MS2_ENDO_pos_files <- subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files))
 
 # EXO files
@@ -267,9 +280,8 @@ if (dir.exists(paste(getwd(), "/endo_pos_Results/", sep = ""))){
 input_dir_MS1_polarity <- paste(getwd(), "/MS1_pos_pos/", sep = "")
 #ENDO_pos files
 MS1_ENDO_pos_files <- list.files(input_dir_MS1_polarity, pattern = "_pos_ENDO")
+
 # Import raw data as MSnbase object OnDiskMsnExp
-
-
 # only MS1 data
 msd <- readMSData(files = paste(input_dir_MS1_polarity, MS1_ENDO_pos_files, sep = ""),
                   pdata = new("NAnnotatedDataFrame",pheno_data_ENDO),
@@ -289,7 +301,7 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
 #msd <- filterRt(msd, c(0, 1020))
 
 # subset data for msLevel = 1 and save raw data
-# msd <- filterMsLevel(msd, msLevel = 1)
+#msd <- filterMsLevel(msd, msLevel = 1)
 table(polarity(msd))
 write.csv(fData(msd), file=paste(filename = "endo_pos_Results/ENDO_pos_raw_data.csv", sep = ""), row.names=FALSE)
 
@@ -302,7 +314,7 @@ write.csv(fData(msd), file=paste(filename = "endo_pos_Results/ENDO_pos_raw_data.
 # setwd(input_dir_MS1_polarity)
 chromas_ENDO_pos <- chromatogram(msd, 
                              aggregationFun="max", 
-                             #msLevel = 1, not for files
+                             msLevel = 1, 
                              )
 
 # Plot chromatograms based on phenodata groups
@@ -672,48 +684,36 @@ print(time.taken)
 
 
 # --------- preparations linking MS2 data -----------
-# object with MS1 and MS2 files preprocessed
-#load()
-
-# MS1 and MS2 files 
-ms12_data_ENDO_pos <- ms_data_endo_pos
-table(msLevel(ms12_data_ENDO_pos))
+# load object with MS1 and MS2 files preprocessed
+ms_data_endo_pos <- load(file = "endo_pos_1ms2_Results/MS_endo_pos_peak_detection.RData")
+#ms_def_endo_pos
+table(msLevel(ms_data_endo_pos))
 
 
 # ---------- MS2 spectra detection ----------
 # Estimate precursor intensity
-precursor_intensity_ENDO_pos <- estimatePrecursorIntensity(ms12_data_ENDO_pos)
-print(head(na.omit(precursor_intensity_ENDO_pos)))
+#precursor_intensity_endo_pos <- xcms::estimatePrecursorIntensity(ms_data_endo_pos)
+#print(head(na.omit(precursor_intensity_endo_pos)))
 
 # Reconstruct MS2 spectra from MS1 data
-ms2_data_ENDO_pos <- chromPeakSpectra(ms12_data_ENDO_pos, msLevel=2L, return.type="Spectra")
-print(ms2_data_ENDO_pos)
-print(length(ms2_data_pos$peak_id))
-
-
-# ---------- MS2 spectra detection ----------
-# Estimate precursor intensity
-#precursor_intensity_ENDO_pos <- xcms::estimatePrecursorIntensity(ms_data_ENDO_pos)
-#print(head(na.omit(precursor_intensity_ENDO_pos)))
-
-# Reconstruct MS2 spectra from MS1 data
-ms2_data_ENDO_pos <- chromPeakSpectra(ms_data_ENDO_pos, msLevel=2L, return.type="Spectra")
-print(ms2_data_ENDO_pos)
-print(length(ms2_data_ENDO_pos$peak_id))
+ms2_data_endo_pos <- chromPeakSpectra(ms_data_endo_pos, msLevel=2L, return.type="Spectra")
+print(ms2_data_endo_pos)
+print(length(ms2_data_endo_pos$peak_id))
+head(ms2_data_endo_pos$peak_id)
 
 # Extract all usable MS2 spectra
-ms2_spectra_ENDO_pos <- list()
-for (i in 1:nrow(ms_def_ENDO_pos)) {
-  #ms2_spectra_ENDO_pos <- foreach(i=1:nrow(ms_def_ENDO_pos)) %dopar% {
+ms2_spectra_endo_pos <- list()
+for (i in 1:nrow(ms1_def_endo_pos)) {
+  #ms2_spectra_endo_pos <- foreach(i=1:nrow(ms1_def_endo_pos)) %dopar% {
   #print(i)
   # Extract existing MS2 spectra for feature
-  feature_of_interest <- ms_def_ENDO_pos[i, "mzmed"]
-  peaks_of_interest <- chromPeaks(ms_data_ENDO_pos, mz=feature_of_interest, ppm=ppm)
+  feature_of_interest <- ms1_def_endo_pos[i, "mzmed"]
+  peaks_of_interest <- chromPeaks(ms_data_endo_pos, mz=feature_of_interest, ppm=ppm)
   
   # Continue if feature has MS2 peaks
-  if (length(which(ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest))) > 0) {
+  if (length(which(ms2_data_endo_pos$peak_id %in% rownames(peaks_of_interest))) > 0) {
     # Extract spectra
-    spectra_of_interest <- ms2_data_ENDO_pos[ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest)]
+    spectra_of_interest <- ms2_data_endo_pos[ms2_data_endo_pos$peak_id %in% rownames(peaks_of_interest)]
     combined_spectra_of_interest <- filterIntensity(spectra_of_interest, intensity=c(1,Inf), backend=MsBackendDataFrame)
     combined_spectra_of_interest <- setBackend(combined_spectra_of_interest, backend=MsBackendDataFrame())
     
@@ -732,18 +732,18 @@ for (i in 1:nrow(ms_def_ENDO_pos)) {
     #plot(x=combined_spectra_peaks[,1], y=combined_spectra_peaks[,2], type="h", xlab="m/z", ylab="intensity", main=paste("Precursor m/z",combined_spectra_of_interest@backend@spectraData$precursorMz[[1]]))
     #length(spectra_of_interest$peak_id)
     
-    ms2_spectra_ENDO_pos[[i]] <- combined_spectra_of_interest
+    ms2_spectra_endo_pos[[i]] <- combined_spectra_of_interest
     #return(combined_spectra_of_interest)
   }
 }
 
 # Remove empty spectra
-names(ms2_spectra_ENDO_pos) <- rownames(ms_def_ENDO_pos)[1:length(ms2_spectra_ENDO_pos)]
-ms2_spectra_ENDO_pos <- ms2_spectra_ENDO_pos[lengths(ms2_spectra_ENDO_pos) != 0]
+names(ms2_spectra_endo_pos) <- rownames(ms1_def_endo_pos)[1:length(ms2_spectra_endo_pos)]
+ms2_spectra_endo_pos <- ms2_spectra_endo_pos[lengths(ms2_spectra_endo_pos) != 0]
 
 # Relate all MS2 spectra to MS1 precursors
-ms_def_ENDO_pos$has_ms2 <- as.integer(rownames(ms_def_ENDO_pos) %in% names(ms2_spectra_ENDO_pos))
-print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms_def_ENDO_pos$has_ms2>0))))
+ms1_def_endo_pos$has_ms2 <- as.integer(rownames(ms1_def_endo_pos) %in% names(ms2_spectra_endo_pos))
+print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms1_def_endo_pos$has_ms2>0))))
 
 # ADDED
 polarity="positive"
@@ -751,109 +751,157 @@ pol="pos"
 
 # Save all MS2 spectra in MGF file
 mgf_text <- NULL
-for (i in names(ms2_spectra_ENDO_pos)) {
+for (i in names(ms2_spectra_endo_pos)) {
   mgf_text <- c(mgf_text, paste0("COM=", i))
   mgf_text <- c(mgf_text, "BEGIN IONS")
   mgf_text <- c(mgf_text, "MSLEVEL=2")
   mgf_text <- c(mgf_text, paste0("TITLE=", i))
-  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms_def_ENDO_pos[i, "rtmed"]))
-  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms_def_ENDO_pos[i, "mzmed"]))
+  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms1_def_endo_pos[i, "rtmed"]))
+  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms1_def_endo_pos[i, "mzmed"]))
   if (polarity == "positive") {
     mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
   } else {
     mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
   }
-  mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$intensity, sep=" "))
+  mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_endo_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_endo_pos[[i]])[[1]])$intensity, sep=" "))
   mgf_text <- c(mgf_text, "END IONS")
   mgf_text <- c(mgf_text, "")
 }
 
 # Write MGF file
-cat(mgf_text, file="ms2_spectra_ENDO_pos.mgf", sep="\n")
+cat(mgf_text, file="ms2_spectra_endo_pos.mgf", sep="\n")
 
 
 
 
-#####copied from coculture.R file######
-# ---------- MS2 spectra detection ----------
-# Estimate precursor intensity
-#precursor_intensity_ENDO_pos <- xcms::estimatePrecursorIntensity(ms_data_ENDO_pos)
-#print(head(na.omit(precursor_intensity_ENDO_pos)))
+# ############################## MS1 statistics examples ##############################
 
-# Reconstruct MS2 spectra from MS1 data
-ms2_data_ENDO_pos <- chromPeakSpectra(ms_data_ENDO_pos, msLevel=2L, return.type="Spectra")
-print(ms2_data_ENDO_pos)
-print(length(ms2_data_ENDO_pos$peak_id))
+mzml_pheno_samples <- samp_groups_description
+mzml_pheno_colors <- color
+principal_components <- 5
 
-# Extract all usable MS2 spectra
-ms2_spectra_ENDO_pos <- list()
-for (i in 1:nrow(ms_def_ENDO_pos)) {
-  #ms2_spectra_ENDO_pos <- foreach(i=1:nrow(ms_def_ENDO_pos)) %dopar% {
-  #print(i)
-  # Extract existing MS2 spectra for feature
-  feature_of_interest <- ms_def_ENDO_pos[i, "mzmed"]
-  peaks_of_interest <- chromPeaks(ms_data_ENDO_pos, mz=feature_of_interest, ppm=ppm)
-  
-  # Continue if feature has MS2 peaks
-  if (length(which(ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest))) > 0) {
-    # Extract spectra
-    spectra_of_interest <- ms2_data_ENDO_pos[ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest)]
-    combined_spectra_of_interest <- filterIntensity(spectra_of_interest, intensity=c(1,Inf), backend=MsBackendDataFrame)
-    combined_spectra_of_interest <- setBackend(combined_spectra_of_interest, backend=MsBackendDataFrame())
-    
-    # Combine spectra
-    combined_spectra_of_interest <- Spectra::combineSpectra(combined_spectra_of_interest, FUN=combinePeaks, ppm=ppm, peaks="union", minProp=0.8, intensityFun=median, mzFun=median, backend=MsBackendDataFrame)#f=rownames(peaks_of_interest))
-    
-    # Remove noise from spectra
-    #combined_spectra_of_interest <- pickPeaks(combined_spectra_of_interest, snr=1.0, method="SuperSmoother") #MAD
-    #combined_spectra_of_interest <- Spectra::smooth(combined_spectra_of_interest, method="SavitzkyGolay") #(Weighted)MovingAverage
-    
-    # Only keep spectral data
-    combined_spectra_peaks <- as.data.frame(Spectra::peaksData(combined_spectra_of_interest)[[1]])
-    
-    # Plot merged spectrum
-    #Spectra::plotSpectra(combined_spectra_of_interest)
-    #plot(x=combined_spectra_peaks[,1], y=combined_spectra_peaks[,2], type="h", xlab="m/z", ylab="intensity", main=paste("Precursor m/z",combined_spectra_of_interest@backend@spectraData$precursorMz[[1]]))
-    #length(spectra_of_interest$peak_id)
-    
-    ms2_spectra_ENDO_pos[[i]] <- combined_spectra_of_interest
-    #return(combined_spectra_of_interest)
-  }
-}
+# comp_list
+comp_list <- feat_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
+colnames(comp_list) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
 
-# Remove empty spectra
-names(ms2_spectra_ENDO_pos) <- rownames(ms_def_ENDO_pos)[1:length(ms2_spectra_ENDO_pos)]
-ms2_spectra_ENDO_pos <- ms2_spectra_ENDO_pos[lengths(ms2_spectra_ENDO_pos) != 0]
+# bina_list
+bina_list <- feat_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
+colnames(bina_list) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
 
-# Relate all MS2 spectra to MS1 precursors
-ms_def_ENDO_pos$has_ms2 <- as.integer(rownames(ms_def_ENDO_pos) %in% names(ms2_spectra_ENDO_pos))
-print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms_def_ENDO_pos$has_ms2>0))))
+# uniq_list
+uniq_list <- uniq_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
+rownames(uniq_list_endo_pos) <- gsub(x=rownames(uniq_list_endo_pos), pattern="\\.auto.*", replacement="")
+colnames(uniq_list_endo_pos) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
 
-# ADDED
-polarity="positive"
-pol="pos"
+# Merge pos and pos div_classes
+div_classes <- div_classes_endo_pos
+div_classes_samples <- div_classes_samples_endo_pos
 
-# Save all MS2 spectra in MGF file
-mgf_text <- NULL
-for (i in names(ms2_spectra_ENDO_pos)) {
-  mgf_text <- c(mgf_text, paste0("COM=", i))
-  mgf_text <- c(mgf_text, "BEGIN IONS")
-  mgf_text <- c(mgf_text, "MSLEVEL=2")
-  mgf_text <- c(mgf_text, paste0("TITLE=", i))
-  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms_def_ENDO_pos[i, "rtmed"]))
-  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms_def_ENDO_pos[i, "mzmed"]))
-  if (polarity == "positive") {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
-  } else {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
-  }
-  mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$intensity, sep=" "))
-  mgf_text <- c(mgf_text, "END IONS")
-  mgf_text <- c(mgf_text, "")
-}
+# Merge pos and pos div_superclasses
+div_superclasses <- div_superclasses_endo_pos
+div_superclasses_samples <- div_superclasses_samples_endo_pos
 
-# Write MGF file
-cat(mgf_text, file="ms2_spectra_ENDO_pos.mgf", sep="\n")
+# Merge pos and pos div_subclasses
+div_subclasses <- div_subclasses_endo_pos
+div_subclasses_samples <- div_subclasses_samples_endo_pos
+
+# class_list
+class_list <- class_list_endo_pos
+rownames(class_list) <- gsub(x=rownames(class_list_endo_pos), pattern="\\.auto.*", replacement="")
+
+# class_int_list
+class_int_list <- class_int_list_endo_pos
+rownames(class_int_list) <- gsub(x=rownames(class_int_list_endo_pos), pattern="\\.auto.*", replacement="")
+
+# superclass_list
+superclass_list <- superclass_list_endo_pos
+rownames(superclass_list) <- gsub(x=rownames(superclass_list_endo_pos), pattern="\\.auto.*", replacement="")
+
+# superclass_int_list
+superclass_int_list <- superclass_int_list_endo_pos
+rownames(superclass_int_list) <- gsub(x=rownames(superclass_int_list_endo_pos), pattern="\\.auto.*", replacement="")
+
+# subclass_list
+subclass_list <- subclass_list_endo_pos
+rownames(subclass_list) <- gsub(x=rownames(subclass_list_endo_pos), pattern="\\.auto.*", replacement="")
+
+# subclass_int_list
+subclass_int_list <- subclass_int_list_endo_pos
+rownames(subclass_int_list) <- gsub(x=rownames(subclass_int_list_endo_pos), pattern="\\.auto.*", replacement="")
+
+cdk_descriptors <- cdk_descriptors_endo_pos
+
+# Create data frame
+model_div             <- data.frame(features=apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } ))
+model_div$richness    <- apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } )
+model_div$menhinick   <- apply(X=bina_list, MARGIN=1, FUN=function(x) { menhinick.diversity(x) } )
+model_div$shannon     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
+model_div$pielou      <- apply(X=scale(comp_list, center=FALSE, scale=FALSE), MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") / log(vegan::specnumber(x)) })
+#model_div$chao        <- vegan::specpool2vect(X=vegan::specpool(feat_list, species), index="chao")
+model_div$simpson     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="simpson") })
+model_div$inverse     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="inv") })
+model_div$fisher      <- apply(X=comp_list, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
+model_div$unique      <- apply(X=uniq_list, MARGIN=1, FUN=function(x) { sum(x) })
+model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list, compDisMat=scales::rescale(as.matrix(dist(t(comp_list)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
+
+# Plot Shannon index
+pdf(paste("plots/ms1_comp_list_diversity_shannon.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=5, height=5, family="Helvetica")
+boxplot(model_div$shannon ~ mzml_pheno_samples, col=mzml_pheno_colors, names=NA, main="Shannon diversity (H\')", xlab="treatment", ylab="Shannon diversity index (H\')")
+text(1:length(levels(mzml_pheno_samples)), par("usr")[3]-(par("usr")[4]-par("usr")[3])/14, srt=-22.5, adj=0.5, labels=levels(mzml_pheno_samples), xpd=TRUE, cex=0.9)
+div_tukey <- tukey.test(response=model_div$shannon, term=as.factor(mzml_pheno_samples))
+text(1:length(levels(mzml_pheno_samples)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
+dev.off()
+
+# PLS
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="plots/ms1_comp_list_select_pls_roc.pdf")
+print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_pls_comp_list$`_selected_variables_`, sel_names=paste0("         ",sel_pls_comp_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms1_comp_list_select_pls.pdf", main="PLS")
+heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms1_comp_list_select_pls.html", selfcontained=TRUE)
+sel_pls_comp_list$`_selected_variables_`
+sel_pls_comp_list$`_model_r2_`
+sel_pls_comp_list$`_multiclass_metrics_`
+
+
+
+# ############################## MS2 statistics examples ##############################
+
+# PLS
+sel_pls_class_list <- f.select_features_pls(feat_matrix=class_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="plots/ms2_class_list_select_pls_roc.pdf")
+print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_class_list$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=class_list, sel_feat=sel_pls_class_list$`_selected_variables_`, sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms2_class_list_select_pls.pdf", main="PLS")
+heatmaply(scale(class_list[, which(colnames(class_list) %in% sel_pls_class_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms2_class_list_select_pls.html", selfcontained=TRUE)
+sel_pls_class_list$`_multiclass_metrics_`
+sel_pls_class_list$`_model_r2_`
+
+
+
+# ############################## Molecular descriptors examples ##############################
+
+
+# Table L: samples x metabolites
+mdes_tab_l <- bina_list
+mdes_tab_l <- bina_list[, which(colnames(bina_list) %in% paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$smiles != "")], "_pos"))]
+mdes_tab_l <- as.data.frame(mdes_tab_l)
+
+# Table R: samples x species
+mdes_tab_r <- as.data.frame.matrix(table(rownames(mdes_tab_l), mzml_pheno_samples))
+rownames(mdes_tab_r) <- rownames(mdes_tab_l)
+
+# Table Q: metabolites x traits
+mdes_tab_q <- cdk_descriptors
+mdes_tab_q[is.na(mdes_tab_q)] <- 0
+
+# Perform matrix operation
+mdes_list <- as.data.frame(as.matrix(mdes_tab_l) %*% as.matrix(mdes_tab_q))
+
+# PLS
+sel_pls_mdes_list <- f.select_features_pls(feat_matrix=mdes_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.995, plot_roc_filename="plots/descriptors_bina_list_select_pls_roc.pdf")
+print(paste("Number of selected descriptors:", f.count.selected_features(sel_feat=sel_pls_mdes_list$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=mdes_list, sel_feat=sel_pls_mdes_list$`_selected_variables_`, sel_names=paste0("        ",sel_pls_mdes_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/descriptors_bina_list_select_pls.pdf", main="PLS")
+heatmaply(scale(mdes_list[, which(colnames(mdes_list) %in% sel_pls_mdes_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/descriptors_bina_list_select_pls.html", selfcontained=TRUE)
+sel_pls_mdes_list$`_multiclass_metrics_`
+sel_pls_mdes_list$`_model_r2_`
+sel_pls_mdes_list$`_selected_variables_`
 
 
 
