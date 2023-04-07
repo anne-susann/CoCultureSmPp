@@ -785,6 +785,16 @@ print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms1_de
 polarity="positive"
 pol="pos"
 
+# create a list with file names of feature origin
+ms2_names <- NULL
+
+
+# extract collision energy
+colenergy <- collisionEnergy(ms_data_endo_pos)
+head(colenergy)
+colenergy <- na.omit(colenergy)
+
+
 # Save all MS2 spectra in MGF file
 mgf_text <- NULL
 for (i in names(ms2_spectra_endo_pos)) {
@@ -795,10 +805,11 @@ for (i in names(ms2_spectra_endo_pos)) {
   mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms1_def_endo_pos[i, "rtmed"]))
   mgf_text <- c(mgf_text, paste0("PEPMASS=", ms1_def_endo_pos[i, "mzmed"]))
   if (polarity == "positive") {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "1"))
   } else {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "0"))
   }
+  mgf_text <- c(mgf_text, paste0("COLENERGY=", unique(colenergy)))
   mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_endo_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_endo_pos[[i]])[[1]])$intensity, sep=" "))
   mgf_text <- c(mgf_text, "END IONS")
   mgf_text <- c(mgf_text, "")

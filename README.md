@@ -12,7 +12,7 @@ Analysis of the MS1 and MS2 data of Co-Culture experiment with S. marinoi and P.
 
 2. Run the pre-processing on **MS1 AND MS2 data COMBINED** with the same parameters using the scripts in the _/MS1and2_workflow_XCMS/_ directory. The necessary objects are saved as .RData.
 
-3. For the linking of MS1 and MS2 data, return to the script in _/MS1_workflow_XCMS/_ and follow from ### linking MS2 data ### on, loading the combined object created in the other directory *ms_data_xxx_pol*. The script establishes a connection between the precursor masses and the origin files, giving the siginificant MS2 spectra as a .mgf file to be using with MAW for feature annotation.
+3. For the linking of MS1 and MS2 data, return to the script in _/MS1_workflow_XCMS/_ and follow from ### linking MS2 data ### on, loading the combined object created in the other directory *ms_data_xxx_pol*. The script establishes a connection between the precursor masses and the origin files using the feature definitions stored in *ms1_def_XXX_pol*, giving the siginificant MS2 spectra as a .mgf file to be used with MAW for feature annotation.
 
 4. (To be included) ~~Following the script, MS1 statistics is performed with OPLS, random forest, varpart, diverisity measures.~~ 
 
