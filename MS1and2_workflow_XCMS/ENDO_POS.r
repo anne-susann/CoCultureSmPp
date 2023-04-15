@@ -207,7 +207,7 @@ head(intensity(chromas_ENDO_pos[1, 1]))
 head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
 table(polarity(msd))
 
-ms_params_ENDO_pos <- CentWaveParam(ppm=9.5, mzCenterFun="wMean", peakwidth=c(12, 51), 
+ms_params_ENDO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 51), 
                                      prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())

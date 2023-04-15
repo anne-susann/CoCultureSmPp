@@ -197,7 +197,7 @@ head(intensity(chromas_ENDO_neg[1, 1]))
 head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
 table(polarity(msd))
 
-ms_params_ENDO_neg <- CentWaveParam(ppm=39.5, mzCenterFun="wMean", peakwidth=c(14, 59), 
+ms_params_ENDO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(14, 59), 
                                      prefilter=c(3, 140), mzdiff=0.0155, snthresh=7, noise=0, 
                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -260,7 +260,7 @@ ms_data_ENDO_neg <- groupChromPeaks(ms_data_ENDO_neg, param=PeakDensityParam(
 # Get integrated peak intensity per feature/sample
 print(head(featureValues(ms_data_ENDO_neg, value="into")))
 
-ppm <- 35  
+ppm <- 25  
 
 # missing value imputation, see xcmsSet
 ms_data_ENDO_neg <- fillChromPeaks(ms_data_ENDO_neg, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))

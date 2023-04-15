@@ -4,23 +4,36 @@
 # Ms2 data relation to MS1 precursors and preparation for annotation by MAW
 
 ###---- library ----
-
-
-library(Spectra)
-library(xcms)
-library(mzR)
-library(MSnbase)
-library(faahKO)
-library(RColorBrewer)
-library(pander)
-library(magrittr)
-library(pheatmap)
-library(SummarizedExperiment)
-library(knitr)
-library(ggplot2)
+# Load libraries
+library(parallel)               # Detect number of cpu cores
+library(foreach)                # For multicore parallel
+library(doMC)                   # For multicore parallel
+library(RColorBrewer)           # For colors
+library(MSnbase)                # MS features
+library(xcms)                   # Swiss army knife for metabolomics
+library(CAMERA)                 # Metabolite Profile Annotation
+library(Spectra)                # Spectra package needed for XCMS3
 library(vegan)
+library(multcomp)               # For Tukey test
+library(Hmisc)                  # For correlation test
+library(gplots)                 # For fancy heatmaps
+library(circlize)               # For sunburst plot
+library(plotrix)                # For sunburst plot
+library(caret)                  # Swiss-army knife for statistics
+library(pROC)                   # Evaluation metrics
+library(PRROC)                  # Evaluation metrics
+library(multiROC)               # Evaluation metrics
+library(chemodiv)               # Chemodiversity (Petren 2022)
+library(rcdk)                   # CDK
+library(rinchi)                 # Converting SMILES to InchiKey
+library(plotly)                 # For creating html plots
+library(htmlwidgets)            # For creating html plots
+library(shiny)                  # HTML in R
+library(sunburstR)              # HTML-sunburst plots
+library(heatmaply)              # HTML heatmaps
 library(stringr)
-library(CAMERA)
+#library(iESTIMATE)
+source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
 ###------parallelization----
 
@@ -37,6 +50,7 @@ library(CAMERA)
 
 ########## set directory and list files ########
 
+start.time <- Sys.time()
 
 # set data directory for MS1 data files
 input_dir_MS1 <- paste(getwd(), "/MS1/", sep = "")
@@ -75,7 +89,7 @@ MS2_files <- list.files(input_dir_MS2, pattern = ".mzML")
 # EXO files
 MS2_EXO_files <- subset(MS2_files, grepl("EXO", MS2_files))
 MS2_EXO_neg_files <- subset(MS2_EXO_files, grepl("neg", MS2_EXO_files))
-MS2_EXO_pos_files <- subset(MS2_EXO_files, grepl("pos", MS2_EXO_files))
+#MS2_EXO_pos_files <- subset(MS2_EXO_files, grepl("pos", MS2_EXO_files))
 
 ###----Separate neg and pos mode in individual files-----
 # create result directory
@@ -158,7 +172,6 @@ raw_data_MS1_EXO_neg_files <- paste(input_dir_MS1, raw_data_MS1_EXO_neg, sep =""
 
 
 ###----MS1 preparations----
-start.time <- Sys.time()
 
 # MS1 variables
 # pol <- c(x = polarity, start =0, stop = 0)
@@ -285,8 +298,8 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
 # for MS2 data subset polarity again to pos = 1
 #msd <- filterPolarity(msd, polarity = 1)
 
-# Restrict data to 1020 seconds (17 minutes)
-#msd <- filterRt(msd, c(0, 1020))
+# Restrict data to 700 seconds 
+msd <- filterRt(msd, c(0, 700))
 
 # subset data for msLevel = 1 and save raw data
 # msd <- filterMsLevel(msd, msLevel = 1)
@@ -541,6 +554,8 @@ processHistory(ms1_data_EXO_neg)
 # save as R object for later use
 MS1_EXO_neg_peak_detection <- ms1_data_EXO_neg
 save(MS1_EXO_neg_peak_detection, file = "exo_neg_Results/MS1_EXO_neg_peak_detection.RData")
+save(ms1_def_EXO_neg, file = "exo_neg_1ms2_Results/ms1_def_EXO_neg.RData")
+
 
 
 
@@ -645,7 +660,7 @@ model_div_EXO_neg$inverse     <- apply(X=feat_list_EXO_neg, MARGIN=1, FUN=functi
 model_div_EXO_neg$fisher      <- apply(X=feat_list_EXO_neg, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
 model_div_EXO_neg$unique      <- apply(X=uniq_list_EXO_neg, MARGIN=1, FUN=function(x) { sum(x) })
 # functional hill diversity
-model_div_pos$hillfunc    <- as.numeric(unlist(calcDiv(feat_list_pos, compDisMat=scales::rescale(as.matrix(dist(t(feat_list_pos)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
+#model_div_pos$hillfunc    <- as.numeric(unlist(calcDiv(feat_list_pos, compDisMat=scales::rescale(as.matrix(dist(t(feat_list_pos)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
 
 
 
@@ -657,6 +672,7 @@ write.csv(model_div_EXO_neg, file=paste(filename = "exo_neg_Results/model_div_EX
 
 
 # save the objects and tables
+save(ms1_def_EXO_neg, file = "exo_neg_Results/ms1_def_EXO_neg.RData")
 save.image(file = "exo_neg_Results/EXO_neg_MS1_environment.RData")
 
 
@@ -665,44 +681,33 @@ end.time <- Sys.time()
 time.taken <- end.time - start.time
 print(time.taken)
 
-# --------- preparations linking MS2 data -----------
-# object with MS1 and MS2 files preprocessed
-load()
-
-# MS1 and MS2 files in one
-ms12_data_EXO_neg <- MS_EXO_neg_peak_detection
-table(msLevel(ms12_data_EXO_neg))
-
-
-# ---------- MS2 spectra detection ----------
-# Estimate precursor intensity
-precursor_intensity_EXO_neg <- estimatePrecursorIntensity(ms12_data_EXO_neg)
-print(head(na.omit(precursor_intensity_EXO_neg)))
-
-# Reconstruct MS2 spectra from MS1 data
-ms2_data_EXO_neg <- chromPeakSpectra(ms12_data_EXO_neg, msLevel=2L, return.type="Spectra")
-print(ms2_data_EXO_neg)
-print(length(ms2_data_neg$peak_id))
-
+############# linking MS2 data #################
+# --------- preparations -----------
+# load object with MS1 and MS2 files preprocessed
+load(file = "exo_neg_1ms2_Results/MS_exo_neg_peak_detection.RData")
+ms_data_exo_neg <- MS_exo_neg_peak_detection
+#ms_def_endo_pos
+table(msLevel(ms_data_exo_neg))
 
 # ---------- MS2 spectra detection ----------
 # Estimate precursor intensity
-#precursor_intensity_EXO_neg <- xcms::estimatePrecursorIntensity(ms_data_EXO_neg)
+#precursor_intensity_EXO_neg <- xcms::estimatePrecursorIntensity(ms_data_exo_neg)
 #print(head(na.omit(precursor_intensity_EXO_neg)))
 
 # Reconstruct MS2 spectra from MS1 data
-ms2_data_EXO_neg <- chromPeakSpectra(ms_data_EXO_neg, msLevel=2L, return.type="Spectra")
+ms2_data_EXO_neg <- chromPeakSpectra(ms_data_exo_neg, msLevel=2L, return.type="Spectra")
 print(ms2_data_EXO_neg)
 print(length(ms2_data_EXO_neg$peak_id))
+head(ms2_data_EXO_neg$peak_id)
 
 # Extract all usable MS2 spectra
 ms2_spectra_EXO_neg <- list()
-for (i in 1:nrow(ms_def_EXO_neg)) {
-  #ms2_spectra_EXO_neg <- foreach(i=1:nrow(ms_def_EXO_neg)) %dopar% {
+for (i in 1:nrow(ms1_def_EXO_neg)) {
+  #ms2_spectra_EXO_neg <- foreach(i=1:nrow(ms1_def_EXO_neg)) %dopar% {
   #print(i)
   # Extract existing MS2 spectra for feature
-  feature_of_interest <- ms_def_EXO_neg[i, "mzmed"]
-  peaks_of_interest <- chromPeaks(ms_data_EXO_neg, mz=feature_of_interest, ppm=ppm)
+  feature_of_interest <- ms1_def_EXO_neg[i, "mzmed"]
+  peaks_of_interest <- chromPeaks(ms_data_exo_neg, mz=feature_of_interest, ppm=ppm)
   
   # Continue if feature has MS2 peaks
   if (length(which(ms2_data_EXO_neg$peak_id %in% rownames(peaks_of_interest))) > 0) {
@@ -732,16 +737,25 @@ for (i in 1:nrow(ms_def_EXO_neg)) {
 }
 
 # Remove empty spectra
-names(ms2_spectra_EXO_neg) <- rownames(ms_def_EXO_neg)[1:length(ms2_spectra_EXO_neg)]
+names(ms2_spectra_EXO_neg) <- rownames(ms1_def_EXO_neg)[1:length(ms2_spectra_EXO_neg)]
 ms2_spectra_EXO_neg <- ms2_spectra_EXO_neg[lengths(ms2_spectra_EXO_neg) != 0]
 
 # Relate all MS2 spectra to MS1 precursors
-ms_def_EXO_neg$has_ms2 <- as.integer(rownames(ms_def_EXO_neg) %in% names(ms2_spectra_EXO_neg))
-print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms_def_EXO_neg$has_ms2>0))))
+ms1_def_EXO_neg$has_ms2 <- as.integer(rownames(ms1_def_EXO_neg) %in% names(ms2_spectra_EXO_neg))
+print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms1_def_EXO_neg$has_ms2>0))))
 
 # ADDED
-polarity="positive"
-pol="pos"
+polarity="negative"
+pol="neg"
+
+# create a list with file names of feature origin
+ms2_names <- NULL
+
+
+# extract collision energy
+colenergy <- collisionEnergy(ms_data_exo_neg)
+head(colenergy)
+colenergy <- na.omit(colenergy)
 
 # Save all MS2 spectra in MGF file
 mgf_text <- NULL
@@ -750,13 +764,14 @@ for (i in names(ms2_spectra_EXO_neg)) {
   mgf_text <- c(mgf_text, "BEGIN IONS")
   mgf_text <- c(mgf_text, "MSLEVEL=2")
   mgf_text <- c(mgf_text, paste0("TITLE=", i))
-  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms_def_EXO_neg[i, "rtmed"]))
-  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms_def_EXO_neg[i, "mzmed"]))
+  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms1_def_EXO_neg[i, "rtmed"]))
+  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms1_def_EXO_neg[i, "mzmed"]))
   if (polarity == "positive") {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "1"))
   } else {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "0"))
   }
+  mgf_text <- c(mgf_text, paste0("COLENERGY=", unique(colenergy)))
   mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_EXO_neg[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_EXO_neg[[i]])[[1]])$intensity, sep=" "))
   mgf_text <- c(mgf_text, "END IONS")
   mgf_text <- c(mgf_text, "")
@@ -765,89 +780,8 @@ for (i in names(ms2_spectra_EXO_neg)) {
 # Write MGF file
 cat(mgf_text, file="ms2_spectra_EXO_neg.mgf", sep="\n")
 
-
-
-
-#####copied from coculture.R file######
-# ---------- MS2 spectra detection ----------
-# Estimate precursor intensity
-#precursor_intensity_EXO_pos <- xcms::estimatePrecursorIntensity(ms_data_EXO_pos)
-#print(head(na.omit(precursor_intensity_EXO_pos)))
-
-# Reconstruct MS2 spectra from MS1 data
-ms2_data_EXO_pos <- chromPeakSpectra(ms_data_EXO_pos, msLevel=2L, return.type="Spectra")
-print(ms2_data_EXO_pos)
-print(length(ms2_data_EXO_pos$peak_id))
-
-# Extract all usable MS2 spectra
-ms2_spectra_EXO_pos <- list()
-for (i in 1:nrow(ms_def_EXO_pos)) {
-  #ms2_spectra_EXO_pos <- foreach(i=1:nrow(ms_def_EXO_pos)) %dopar% {
-  #print(i)
-  # Extract existing MS2 spectra for feature
-  feature_of_interest <- ms_def_EXO_pos[i, "mzmed"]
-  peaks_of_interest <- chromPeaks(ms_data_EXO_pos, mz=feature_of_interest, ppm=ppm)
-  
-  # Continue if feature has MS2 peaks
-  if (length(which(ms2_data_EXO_pos$peak_id %in% rownames(peaks_of_interest))) > 0) {
-    # Extract spectra
-    spectra_of_interest <- ms2_data_EXO_pos[ms2_data_EXO_pos$peak_id %in% rownames(peaks_of_interest)]
-    combined_spectra_of_interest <- filterIntensity(spectra_of_interest, intensity=c(1,Inf), backend=MsBackendDataFrame)
-    combined_spectra_of_interest <- setBackend(combined_spectra_of_interest, backend=MsBackendDataFrame())
-    
-    # Combine spectra
-    combined_spectra_of_interest <- Spectra::combineSpectra(combined_spectra_of_interest, FUN=combinePeaks, ppm=ppm, peaks="union", minProp=0.8, intensityFun=median, mzFun=median, backend=MsBackendDataFrame)#f=rownames(peaks_of_interest))
-    
-    # Remove noise from spectra
-    #combined_spectra_of_interest <- pickPeaks(combined_spectra_of_interest, snr=1.0, method="SuperSmoother") #MAD
-    #combined_spectra_of_interest <- Spectra::smooth(combined_spectra_of_interest, method="SavitzkyGolay") #(Weighted)MovingAverage
-    
-    # Only keep spectral data
-    combined_spectra_peaks <- as.data.frame(Spectra::peaksData(combined_spectra_of_interest)[[1]])
-    
-    # Plot merged spectrum
-    #Spectra::plotSpectra(combined_spectra_of_interest)
-    #plot(x=combined_spectra_peaks[,1], y=combined_spectra_peaks[,2], type="h", xlab="m/z", ylab="intensity", main=paste("Precursor m/z",combined_spectra_of_interest@backend@spectraData$precursorMz[[1]]))
-    #length(spectra_of_interest$peak_id)
-    
-    ms2_spectra_EXO_pos[[i]] <- combined_spectra_of_interest
-    #return(combined_spectra_of_interest)
-  }
-}
-
-# Remove empty spectra
-names(ms2_spectra_EXO_pos) <- rownames(ms_def_EXO_pos)[1:length(ms2_spectra_EXO_pos)]
-ms2_spectra_EXO_pos <- ms2_spectra_EXO_pos[lengths(ms2_spectra_EXO_pos) != 0]
-
-# Relate all MS2 spectra to MS1 precursors
-ms_def_EXO_pos$has_ms2 <- as.integer(rownames(ms_def_EXO_pos) %in% names(ms2_spectra_EXO_pos))
-print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms_def_EXO_pos$has_ms2>0))))
-
-# ADDED
-polarity="positive"
-pol="pos"
-
-# Save all MS2 spectra in MGF file
-mgf_text <- NULL
-for (i in names(ms2_spectra_EXO_pos)) {
-  mgf_text <- c(mgf_text, paste0("COM=", i))
-  mgf_text <- c(mgf_text, "BEGIN IONS")
-  mgf_text <- c(mgf_text, "MSLEVEL=2")
-  mgf_text <- c(mgf_text, paste0("TITLE=", i))
-  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms_def_EXO_pos[i, "rtmed"]))
-  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms_def_EXO_pos[i, "mzmed"]))
-  if (polarity == "positive") {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
-  } else {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
-  }
-  mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_EXO_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_EXO_pos[[i]])[[1]])$intensity, sep=" "))
-  mgf_text <- c(mgf_text, "END IONS")
-  mgf_text <- c(mgf_text, "")
-}
-
-# Write MGF file
-cat(mgf_text, file="ms2_spectra_EXO_pos.mgf", sep="\n")
+# save image with linked features
+save.image(file = "exo_neg_Results/EXO_neg_linked_1MS2_environment.RData")
 
 
 
