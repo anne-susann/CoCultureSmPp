@@ -4,23 +4,36 @@
 # Ms2 data relation to MS1 precursors and preparation for annotation by MAW
 
 ###---- library ----
-
-
-library(Spectra)
-library(xcms)
-library(mzR)
-library(MSnbase)
-library(faahKO)
-library(RColorBrewer)
-library(pander)
-library(magrittr)
-library(pheatmap)
-library(SummarizedExperiment)
-library(knitr)
-library(ggplot2)
+# Load libraries
+library(parallel)               # Detect number of cpu cores
+library(foreach)                # For multicore parallel
+library(doMC)                   # For multicore parallel
+library(RColorBrewer)           # For colors
+library(MSnbase)                # MS features
+library(xcms)                   # Swiss army knife for metabolomics
+library(CAMERA)                 # Metabolite Profile Annotation
+library(Spectra)                # Spectra package needed for XCMS3
 library(vegan)
+library(multcomp)               # For Tukey test
+library(Hmisc)                  # For correlation test
+library(gplots)                 # For fancy heatmaps
+library(circlize)               # For sunburst plot
+library(plotrix)                # For sunburst plot
+library(caret)                  # Swiss-army knife for statistics
+library(pROC)                   # Evaluation metrics
+library(PRROC)                  # Evaluation metrics
+library(multiROC)               # Evaluation metrics
+library(chemodiv)               # Chemodiversity (Petren 2022)
+library(rcdk)                   # CDK
+library(rinchi)                 # Converting SMILES to InchiKey
+library(plotly)                 # For creating html plots
+library(htmlwidgets)            # For creating html plots
+library(shiny)                  # HTML in R
+library(sunburstR)              # HTML-sunburst plots
+library(heatmaply)              # HTML heatmaps
 library(stringr)
-library(CAMERA)
+#library(iESTIMATE)
+source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
 ###------parallelization----
 
@@ -70,7 +83,7 @@ MS2_files <- list.files(input_dir_MS2, pattern = ".mzML")
 # MS2_ENDO_neg_files <- data.frame(subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files[,1]), drop = TRUE))
 MS2_ENDO_files <- subset(MS2_files, grepl("ENDO", MS2_files))
 MS2_ENDO_neg_files <- subset(MS2_ENDO_files, grepl("neg", MS2_ENDO_files))
-MS2_ENDO_pos_files <- subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files))
+#MS2_ENDO_pos_files <- subset(MS2_ENDO_files, grepl("pos", MS2_ENDO_files))
 
 # EXO files
 #MS2_EXO_files <- subset(MS2_files, grepl("EXO", MS2_files))
@@ -373,65 +386,66 @@ table(polarity(msd))
 
 # Peak detection in MS1 data
 # define pre-processed data variable
-ms1_data_ENDO_neg <- NULL 
-condition_name <- deparse(substitute(ms1_data_ENDO_neg))
-condition_name
+#ms1_data_ENDO_neg <- NULL 
+#condition_name <- deparse(substitute(ms1_data_ENDO_neg))
+#condition_name
 
 # perform peak detection with corresponding parameters 
 #pick_peaks_f <- function(condition_name, MSnobject) {
-if (condition_name == "ms1_data_EXO_neg") {
+#if (condition_name == "ms1_data_EXO_neg") {
   # set parameters
   # EXO neg 
-  ms1_params_EXO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 53), 
-                                      prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
-                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
-                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
+#  ms1_params_EXO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 53), 
+#                                      prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
+#                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+#                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
   
   # perform peak detection
-  ms1_data_EXO_neg <- findChromPeaks(msd, param=ms1_params_EXO_neg)
-  print("parameters for EXO neg used, peak detection successful")
+#  ms1_data_EXO_neg <- findChromPeaks(msd, param=ms1_params_EXO_neg)
+#  print("parameters for EXO neg used, peak detection successful")
   
-} else if (condition_name == "ms1_data_EXO_pos") {
+#} else if (condition_name == "ms1_data_EXO_pos") {
   # set parameters
   # EXO pos 
-  ms1_params_EXO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(13, 51), 
-                                      prefilter=c(2.6, 41), mzdiff= -0.0098, snthresh=5, noise=0, 
-                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
-                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
+#  ms1_params_EXO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(13, 51), 
+#                                      prefilter=c(2.6, 41), mzdiff= -0.0098, snthresh=5, noise=0, 
+#                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+#                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
   # perform peak detection
-  ms1_data_EXO_pos <- findChromPeaks(msd, param=ms1_params_EXO_pos)
-  print("paramters for EXO pos used, peak detection successful")
+#  ms1_data_EXO_pos <- findChromPeaks(msd, param=ms1_params_EXO_pos)
+#  print("paramters for EXO pos used, peak detection successful")
   
-} else if (condition_name == "ms1_data_ENDO_neg") {
+#} else if (condition_name == "ms1_data_ENDO_neg") {
   # set parameters
   # ENDO neg
   ms1_params_ENDO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(14, 59), 
                                        prefilter=c(3, 140), mzdiff=0.0155, snthresh=7, noise=0, 
                                        integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                        fitgauss=FALSE, roiList=list(), roiScales=numeric())
-  # perform peak detection
-  ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_ENDO_neg)
-  print("parameters for ENDO neg used, peak detection successful")
+
+    # perform peak detection
+#  ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_ENDO_neg)
+#  print("parameters for ENDO neg used, peak detection successful")
   
-} else if (condition_name == "ms1_data_ENDO_neg") {
+#} else if (condition_name == "ms1_data_ENDO_neg") {
   # set parameters
   # ENDO pos
-  ms1_params_ENDO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 51), 
-                                       prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
-                                       integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
-                                       fitgauss=FALSE, roiList=list(), roiScales=numeric())
+#  ms1_params_ENDO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 51), 
+#                                       prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
+#                                       integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
+#                                       fitgauss=FALSE, roiList=list(), roiScales=numeric())
   # perform peak detection
-  ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_ENDO_neg)
-  print("parameters for ENDO pos used, peak detection successful")
+#  ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_ENDO_neg)
+#  print("parameters for ENDO pos used, peak detection successful")
   
-} else {
-  print("peak detection failed, check again")
+#} else {
+#  print("peak detection failed, check again")
   
-}
+#}
 #}
 
 # manual 
-#ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_EXO_neg)
+ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_ENDO_neg)
 
 # check the detected peaks
 head(chromPeaks(ms1_data_ENDO_neg))
@@ -570,7 +584,7 @@ feat_list_ENDO_neg[which(is.na(feat_list_ENDO_neg))] <- 0
 
 # save as csv
 write.csv(feat_list_ENDO_neg, file=paste(filename = "endo_neg_Results/feature_list_ENDO_neg.csv", sep = ""))
-
+save(ms1_def_ENDO_neg, file = "endo_neg_Results/ms1_def_ENDO_neg.RData")
 
 # Plot histogram
 #pdf(file="endo_neg_plots/ENDO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
@@ -592,6 +606,41 @@ text(ms1_pca_ENDO_neg$x[,1], ms1_pca_ENDO_neg$x[,2], labels=str_sub(ms1_data_END
 legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(ms1_data_ENDO_neg@phenoData@data[["sample_group"]]))
 dev.off()
+
+# PCA of feature table on species level
+index_SM <- grep("Sm", pheno_data_ENDO$sample_group)
+index_PP <- grep("Pp", pheno_data_ENDO$sample_group)
+#test_SM <- data.frame(feat_list_ENDO_pos[index_SM,])
+#test_PP <- data.frame(feat_list_ENDO_pos[index_PP,])
+
+# PCA for Sm
+jpeg(filename = "endo_neg_plots/ENDO_neg_ms1_feature_table_pca_SM.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+ms1_pca_ENDO_neg_SM <- prcomp(feat_list_ENDO_neg[index_SM,], center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
+plot(ms1_pca_ENDO_neg_SM$x[, 1], ms1_pca_ENDO_neg_SM$x[,2], pch=19, main="PCA of feature table",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO_neg_SM)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO_neg_SM)$importance[2, 2] * 100, digits=3), " % variance"),
+     col=unique(color[index_SM]), cex=2)
+grid()
+text(ms1_pca_ENDO_neg_SM$x[,1], ms1_pca_ENDO_neg_SM$x[,2], labels=str_sub(ms1_data_ENDO_neg$sample_name[index_SM], - 3, - 1), col=unique(color[index_SM]), pos=3, cex=1.5)
+legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color[index_SM]), legend= c("CoCuSm", "Sm"))
+dev.off()
+
+# PCA for Pp
+jpeg(filename = "endo_neg_plots/ENDO_neg_ms1_feature_table_pca_PP.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+ms1_pca_ENDO_neg_PP <- prcomp(feat_list_ENDO_neg[index_PP,], center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
+plot(ms1_pca_ENDO_neg_PP$x[, 1], ms1_pca_ENDO_neg_PP$x[,2], pch=19, main="PCA of feature table",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO_neg_PP)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO_neg_PP)$importance[2, 2] * 100, digits=3), " % variance"),
+     col=unique(color[index_PP]), cex=2)
+grid()
+text(ms1_pca_ENDO_neg_PP$x[,1], ms1_pca_ENDO_neg_PP$x[,2], labels=str_sub(ms1_data_ENDO_neg$sample_name[index_PP], - 3, - 1), col=unique(color[index_PP]), pos=3, cex=1.5)
+legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color[index_PP]), legend= c("CoCuPp", "Pp"))
+dev.off()
+
 
 # broken stick
 png("endo_neg_plots/BrokenStick_ENDO_neg_ms1_feature_table_pca_exc_MB.png", width=10, height=6, units="in", res=100)
@@ -649,7 +698,7 @@ model_div_ENDO_neg$inverse     <- apply(X=feat_list_ENDO_neg, MARGIN=1, FUN=func
 model_div_ENDO_neg$fisher      <- apply(X=feat_list_ENDO_neg, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
 model_div_ENDO_neg$unique      <- apply(X=uniq_list_ENDO_neg, MARGIN=1, FUN=function(x) { sum(x) })
 # functional hill diversity
-model_div_pos$hillfunc    <- as.numeric(unlist(calcDiv(feat_list_ENDO_neg, compDisMat=scales::rescale(as.matrix(dist(t(feat_list_ENDO_neg)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
+#model_div_neg$hillfunc    <- as.numeric(unlist(calcDiv(feat_list_ENDO_neg, compDisMat=scales::rescale(as.matrix(dist(t(feat_list_ENDO_neg)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
 
 
 
@@ -671,24 +720,16 @@ print(time.taken)
 
 
 
-# --------- preparations linking MS2 data -----------
-# object with MS1 and MS2 files preprocessed
-#load()
+############# linking MS2 data #################
+# --------- preparations -----------
+# load object with MS1 and MS2 files preprocessed
+load(file = "endo_neg_1ms2_Results/MS_endo_neg_peak_detection.RData")
+ms_data_ENDO_neg <- MS_endo_neg_peak_detection
+#ms_def_endo_pos
+table(msLevel(ms_data_ENDO_neg))
+table(msLevel(ms1_data_ENDO_neg))
 
-# MS1 and MS2 files 
-ms12_data_ENDO_neg <- ms_data_endo_neg
-table(msLevel(ms12_data_ENDO_neg))
-
-
-# ---------- MS2 spectra detection ----------
-# Estimate precursor intensity
-precursor_intensity_ENDO_neg <- estimatePrecursorIntensity(ms12_data_ENDO_neg)
-print(head(na.omit(precursor_intensity_ENDO_neg)))
-
-# Reconstruct MS2 spectra from MS1 data
-ms2_data_ENDO_neg <- chromPeakSpectra(ms12_data_ENDO_neg, msLevel=2L, return.type="Spectra")
-print(ms2_data_ENDO_neg)
-print(length(ms2_data_neg$peak_id))
+head(ms1_def_ENDO_neg)
 
 
 # ---------- MS2 spectra detection ----------
@@ -700,14 +741,16 @@ print(length(ms2_data_neg$peak_id))
 ms2_data_ENDO_neg <- chromPeakSpectra(ms_data_ENDO_neg, msLevel=2L, return.type="Spectra")
 print(ms2_data_ENDO_neg)
 print(length(ms2_data_ENDO_neg$peak_id))
+head(ms2_data_ENDO_neg$peak_id)
+
 
 # Extract all usable MS2 spectra
 ms2_spectra_ENDO_neg <- list()
-for (i in 1:nrow(ms_def_ENDO_neg)) {
-  #ms2_spectra_ENDO_neg <- foreach(i=1:nrow(ms_def_ENDO_neg)) %dopar% {
+for (i in 1:nrow(ms1_def_ENDO_neg)) {
+  #ms2_spectra_ENDO_neg <- foreach(i=1:nrow(ms1_def_ENDO_neg)) %dopar% {
   #print(i)
   # Extract existing MS2 spectra for feature
-  feature_of_interest <- ms_def_ENDO_neg[i, "mzmed"]
+  feature_of_interest <- ms1_def_ENDO_neg[i, "mzmed"]
   peaks_of_interest <- chromPeaks(ms_data_ENDO_neg, mz=feature_of_interest, ppm=ppm)
   
   # Continue if feature has MS2 peaks
@@ -738,16 +781,26 @@ for (i in 1:nrow(ms_def_ENDO_neg)) {
 }
 
 # Remove empty spectra
-names(ms2_spectra_ENDO_neg) <- rownames(ms_def_ENDO_neg)[1:length(ms2_spectra_ENDO_neg)]
+names(ms2_spectra_ENDO_neg) <- rownames(ms1_def_ENDO_neg)[1:length(ms2_spectra_ENDO_neg)]
 ms2_spectra_ENDO_neg <- ms2_spectra_ENDO_neg[lengths(ms2_spectra_ENDO_neg) != 0]
 
 # Relate all MS2 spectra to MS1 precursors
-ms_def_ENDO_neg$has_ms2 <- as.integer(rownames(ms_def_ENDO_neg) %in% names(ms2_spectra_ENDO_neg))
-print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms_def_ENDO_neg$has_ms2>0))))
+ms1_def_ENDO_neg$has_ms2 <- as.integer(rownames(ms1_def_ENDO_neg) %in% names(ms2_spectra_ENDO_neg))
+print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms1_def_ENDO_neg$has_ms2>0))))
 
 # ADDED
-polarity="positive"
-pol="pos"
+polarity="negative"
+pol="neg"
+
+# create a list with file names of feature origin
+ms2_names <- NULL
+
+
+# extract collision energy
+colenergy <- collisionEnergy(ms_data_endo_pos)
+head(colenergy)
+colenergy <- na.omit(colenergy)
+
 
 # Save all MS2 spectra in MGF file
 mgf_text <- NULL
@@ -756,105 +809,26 @@ for (i in names(ms2_spectra_ENDO_neg)) {
   mgf_text <- c(mgf_text, "BEGIN IONS")
   mgf_text <- c(mgf_text, "MSLEVEL=2")
   mgf_text <- c(mgf_text, paste0("TITLE=", i))
-  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms_def_ENDO_neg[i, "rtmed"]))
-  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms_def_ENDO_neg[i, "mzmed"]))
+  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms1_def_ENDO_neg[i, "rtmed"]))
+  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms1_def_ENDO_neg[i, "mzmed"]))
   if (polarity == "positive") {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "1"))
   } else {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
+    mgf_text <- c(mgf_text, paste0("CHARGE=", "0"))
   }
+  mgf_text <- c(mgf_text, paste0("COLENERGY=", unique(colenergy)))
   mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_ENDO_neg[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_ENDO_neg[[i]])[[1]])$intensity, sep=" "))
   mgf_text <- c(mgf_text, "END IONS")
   mgf_text <- c(mgf_text, "")
 }
 
 # Write MGF file
-cat(mgf_text, file="ms2_spectra_ENDO_neg.mgf", sep="\n")
+cat(mgf_text, file="endo_neg_1ms2_Results/ms2_spectra_ENDO_neg.mgf", sep="\n")
 
 
 
 
 #####copied from coculture.R file######
-# ---------- MS2 spectra detection ----------
-# Estimate precursor intensity
-#precursor_intensity_ENDO_pos <- xcms::estimatePrecursorIntensity(ms_data_ENDO_pos)
-#print(head(na.omit(precursor_intensity_ENDO_pos)))
-
-# Reconstruct MS2 spectra from MS1 data
-ms2_data_ENDO_pos <- chromPeakSpectra(ms_data_ENDO_pos, msLevel=2L, return.type="Spectra")
-print(ms2_data_ENDO_pos)
-print(length(ms2_data_ENDO_pos$peak_id))
-
-# Extract all usable MS2 spectra
-ms2_spectra_ENDO_pos <- list()
-for (i in 1:nrow(ms_def_ENDO_pos)) {
-  #ms2_spectra_ENDO_pos <- foreach(i=1:nrow(ms_def_ENDO_pos)) %dopar% {
-  #print(i)
-  # Extract existing MS2 spectra for feature
-  feature_of_interest <- ms_def_ENDO_pos[i, "mzmed"]
-  peaks_of_interest <- chromPeaks(ms_data_ENDO_pos, mz=feature_of_interest, ppm=ppm)
-  
-  # Continue if feature has MS2 peaks
-  if (length(which(ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest))) > 0) {
-    # Extract spectra
-    spectra_of_interest <- ms2_data_ENDO_pos[ms2_data_ENDO_pos$peak_id %in% rownames(peaks_of_interest)]
-    combined_spectra_of_interest <- filterIntensity(spectra_of_interest, intensity=c(1,Inf), backend=MsBackendDataFrame)
-    combined_spectra_of_interest <- setBackend(combined_spectra_of_interest, backend=MsBackendDataFrame())
-    
-    # Combine spectra
-    combined_spectra_of_interest <- Spectra::combineSpectra(combined_spectra_of_interest, FUN=combinePeaks, ppm=ppm, peaks="union", minProp=0.8, intensityFun=median, mzFun=median, backend=MsBackendDataFrame)#f=rownames(peaks_of_interest))
-    
-    # Remove noise from spectra
-    #combined_spectra_of_interest <- pickPeaks(combined_spectra_of_interest, snr=1.0, method="SuperSmoother") #MAD
-    #combined_spectra_of_interest <- Spectra::smooth(combined_spectra_of_interest, method="SavitzkyGolay") #(Weighted)MovingAverage
-    
-    # Only keep spectral data
-    combined_spectra_peaks <- as.data.frame(Spectra::peaksData(combined_spectra_of_interest)[[1]])
-    
-    # Plot merged spectrum
-    #Spectra::plotSpectra(combined_spectra_of_interest)
-    #plot(x=combined_spectra_peaks[,1], y=combined_spectra_peaks[,2], type="h", xlab="m/z", ylab="intensity", main=paste("Precursor m/z",combined_spectra_of_interest@backend@spectraData$precursorMz[[1]]))
-    #length(spectra_of_interest$peak_id)
-    
-    ms2_spectra_ENDO_pos[[i]] <- combined_spectra_of_interest
-    #return(combined_spectra_of_interest)
-  }
-}
-
-# Remove empty spectra
-names(ms2_spectra_ENDO_pos) <- rownames(ms_def_ENDO_pos)[1:length(ms2_spectra_ENDO_pos)]
-ms2_spectra_ENDO_pos <- ms2_spectra_ENDO_pos[lengths(ms2_spectra_ENDO_pos) != 0]
-
-# Relate all MS2 spectra to MS1 precursors
-ms_def_ENDO_pos$has_ms2 <- as.integer(rownames(ms_def_ENDO_pos) %in% names(ms2_spectra_ENDO_pos))
-print(paste0("Number of MS2 spectra related to precursor: ", length(which(ms_def_ENDO_pos$has_ms2>0))))
-
-# ADDED
-polarity="positive"
-pol="pos"
-
-# Save all MS2 spectra in MGF file
-mgf_text <- NULL
-for (i in names(ms2_spectra_ENDO_pos)) {
-  mgf_text <- c(mgf_text, paste0("COM=", i))
-  mgf_text <- c(mgf_text, "BEGIN IONS")
-  mgf_text <- c(mgf_text, "MSLEVEL=2")
-  mgf_text <- c(mgf_text, paste0("TITLE=", i))
-  mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms_def_ENDO_pos[i, "rtmed"]))
-  mgf_text <- c(mgf_text, paste0("PEPMASS=", ms_def_ENDO_pos[i, "mzmed"]))
-  if (polarity == "positive") {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1+"))
-  } else {
-    mgf_text <- c(mgf_text, paste0("CHARGE=", "1-"))
-  }
-  mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_ENDO_pos[[i]])[[1]])$intensity, sep=" "))
-  mgf_text <- c(mgf_text, "END IONS")
-  mgf_text <- c(mgf_text, "")
-}
-
-# Write MGF file
-cat(mgf_text, file="ms2_spectra_ENDO_pos.mgf", sep="\n")
-
 
 
 

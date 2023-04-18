@@ -52,7 +52,7 @@ source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.
 
 
 # set data directory for MS1 data files
-input_dir_MS1 <- paste(getwd(), "/MS1/", sep = "")
+input_dir_MS1 <- paste(getwd(), "/MS1_pos_neg/", sep = "")
 # set data directory for MS2 data files
 input_dir_MS2 <- paste(getwd(), "/MS2/", sep = "")
 # file lists
@@ -62,7 +62,7 @@ files_MS2 <- list.files(input_dir_MS2)
 
 ###----MS1 ENDO files----
 #MS1_ENDO_files <- data.frame(list.files(input_dir_MS1, pattern = "ENDO"))
-MS1_ENDO_files <- list.files(input_dir_MS1, pattern = "ENDO")
+MS1_ENDO_files <- list.files(input_dir_MS1, pattern = "pos_ENDO")
 # basenames of files without path and without extension
 #MS1_ENDO_names <- data.frame(str_remove(MS1_ENDO_files[,], ".mzML"))
 MS1_ENDO_names <- str_remove(MS1_ENDO_files, ".mzML")
@@ -277,7 +277,7 @@ if (dir.exists(paste(getwd(), "/endo_pos_Results/", sep = ""))){
 
 
 # input directory
-input_dir_MS1_polarity <- paste(getwd(), "/MS1_pos_pos/", sep = "")
+input_dir_MS1_polarity <- paste(getwd(), "/MS1_pos_neg/", sep = "")
 #ENDO_pos files
 MS1_ENDO_pos_files <- list.files(input_dir_MS1_polarity, pattern = "_pos_ENDO")
 
@@ -297,8 +297,8 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
 # for MS2 data subset polarity again to pos = 1
 #msd <- filterPolarity(msd, polarity = 1)
 
-# Restrict data to 1020 seconds (17 minutes)
-#msd <- filterRt(msd, c(0, 1020))
+# Restrict data to 700 seconds 
+msd <- filterRt(msd, c(0, 700))
 
 # subset data for msLevel = 1 and save raw data
 #msd <- filterMsLevel(msd, msLevel = 1)
@@ -582,7 +582,7 @@ feat_list_ENDO_pos[which(is.na(feat_list_ENDO_pos))] <- 0
 
 # save as csv
 write.csv(feat_list_ENDO_pos, file=paste(filename = "endo_pos_Results/feature_list_ENDO_pos.csv", sep = ""))
-
+save(ms1_def_ENDO_pos, file = "endo_pos_Results/ms1_def_ENDO_pos.RData")
 
 # Plot histogram
 #pdf(file="endo_pos_plots/ENDO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
@@ -709,8 +709,9 @@ write.csv(model_div_ENDO_pos, file=paste(filename = "endo_pos_Results/model_div_
 
 
 # save the objects and tables
+save(ms1_def_ENDO_pos, file = "endo_pos_Results/ms1_def_ENDO_pos.RData")
 save.image(file = "endo_pos_Results/ENDO_pos_MS1_environment.RData")
-#load("endo_pos_Results/ENDO_pos_MS1_environment.RData")
+
 
 end.time <- Sys.time()
 
@@ -721,7 +722,8 @@ print(time.taken)
 ############# linking MS2 data #################
 # --------- preparations -----------
 # load object with MS1 and MS2 files preprocessed
-ms_data_endo_pos <- load(file = "endo_pos_1ms2_Results/MS_endo_pos_peak_detection.RData")
+load(file = "endo_pos_1ms2_Results/MS_endo_pos_peak_detection.RData")
+ms_data_endo_pos <- MS_endo_pos_peak_detection
 #ms_def_endo_pos
 table(msLevel(ms_data_endo_pos))
 
@@ -825,7 +827,7 @@ cat(mgf_text, file="ms2_spectra_endo_pos.mgf", sep="\n")
 
 mzml_pheno_samples <- samp_groups_description
 mzml_pheno_colors <- color
-principal_components <- 5
+principal_components <- 5 # Pp, Sm, CoCuPp, CoCuSm, MB
 
 # comp_list
 comp_list <- feat_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
@@ -951,6 +953,7 @@ sel_pls_mdes_list$`_model_r2_`
 sel_pls_mdes_list$`_selected_variables_`
 
 
-
+###################### MS1 statistics ##################
+# OPLS
 
 
