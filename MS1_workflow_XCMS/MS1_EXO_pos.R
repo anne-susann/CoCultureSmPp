@@ -31,6 +31,9 @@ library(htmlwidgets)            # For creating html plots
 library(shiny)                  # HTML in R
 library(sunburstR)              # HTML-sunburst plots
 library(heatmaply)              # HTML heatmaps
+library(dummies)
+library(mltest)
+library(mlr)
 library(stringr)
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
@@ -868,11 +871,35 @@ dev.off()
 # PLS
 sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="exo_pos_plots/ms1_comp_list_select_pls_roc.pdf")
 print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_pls_comp_list$`_selected_variables_`, sel_names=paste0("         ",sel_pls_comp_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms1_comp_list_select_pls.pdf", main="PLS")
-heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms1_comp_list_select_pls.html", selfcontained=TRUE)
+f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_pls_comp_list$`_selected_variables_`, sel_names=paste0("         ",sel_pls_comp_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="exo_pos_plots/ms1_comp_list_select_pls.pdf", main="PLS")
+heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="exo_pos_plots/ms1_comp_list_select_pls.html", selfcontained=TRUE)
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
+
+save(sel_pls_comp_list, file = "exo_pos_Results/sel_pls_comp_list.RData")
+
+# ---------- Variation partitioning ----------
+# sample dependent
+mzml_pheno_samples_type <- samp_groups
+mzml_pheno_samples
+# mono-culture or co-culture
+mzml_pheno_origin_samples_pos <- as.factor(origin_samp_groups <- c("CoCu", "CoCu", "CoCu", "CoCu", "CoCu", "CoCu",
+                                                            rep(x = "MonoCu", times = 8), 
+                                                            rep(x = "MonoCu", times = 8),
+                                                            "CoCu", "CoCu", "MB")
+)
+  
+model_varpart_pos <- varpart(scale(comp_list), ~ mzml_pheno_samples, ~ mzml_pheno_origin_samples_pos )
+
+# Plot results
+pdf(file="exo_pos_plots/pos_ms1_varpart.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
+plot(model_varpart_pos, Xnames=c("samples","culture type"), cutoff=0, cex=1.2, id.size=1.2, digits=1, bg=c("blue","green"))
+dev.off()
+
+
+
+
 
 
 
