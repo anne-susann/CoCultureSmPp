@@ -1,5 +1,5 @@
 # CoCultureSmPp
-Analysis of the MS1 and MS2 data of Co-Culture experiment with S. marinoi and P. parvum
+Analysis of the MS1 and MS2 data of Co-Culture experiment with _S. marinoi_ and _P. parvum_
 
 ## HOW TO:
 1. Pre-process **ONLY MS1 data** with scripts from _/MS1_workflow_XCMS/_ directory. The MS1 data is pre-processed and analysed with specific parameters for each condition (see ENDO_pos, EXO_neg etc.). Run code until ### linking MS2 data ###. Until here you get an overview over the data and first insights into its nature with PCA plots. Created results will be:
@@ -14,7 +14,7 @@ Analysis of the MS1 and MS2 data of Co-Culture experiment with S. marinoi and P.
 
 3. For the linking of MS1 and MS2 data, return to the script in _/MS1_workflow_XCMS/_ and follow from ### linking MS2 data ### on, loading the combined object created in the other directory *ms_data_xxx_pol*. The script establishes a connection between the precursor masses and the origin files using the feature definitions stored in *ms1_def_XXX_pol*, giving the siginificant MS2 spectra as a .mgf file to be used with MAW for feature annotation.
 
-4. (To be included) ~~Following the script, MS1 statistics is performed with OPLS, random forest, varpart, diverisity measures.~~ 
+4. _For EXO pos_ Following the script, MS1 statistics is performed with diverisity measures, OPLS, varpart, random forest. 
 
 
 
