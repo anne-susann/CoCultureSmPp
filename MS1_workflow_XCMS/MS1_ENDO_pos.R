@@ -5,9 +5,9 @@
 
 ###---- library ----
 # Load libraries
-library(parallel)               # Detect number of cpu cores
-library(foreach)                # For multicore parallel
-library(doMC)                   # For multicore parallel
+#library(parallel)               # Detect number of cpu cores
+#library(foreach)                # For multicore parallel
+#library(doMC)                   # For multicore parallel
 library(RColorBrewer)           # For colors
 library(MSnbase)                # MS features
 library(xcms)                   # Swiss army knife for metabolomics
@@ -23,14 +23,14 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-library(chemodiv)               # Chemodiversity (Petren 2022)
-library(rcdk)                   # CDK
-library(rinchi)                 # Converting SMILES to InchiKey
+#library(chemodiv)               # Chemodiversity (Petren 2022)
+#library(rcdk)                   # CDK
+#library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
-library(shiny)                  # HTML in R
-library(sunburstR)              # HTML-sunburst plots
-library(heatmaply)              # HTML heatmaps
+#library(shiny)                  # HTML in R
+#library(sunburstR)              # HTML-sunburst plots
+#library(heatmaply)              # HTML heatmaps
 library(stringr)
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
@@ -49,7 +49,7 @@ source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.
 #R.Version()
 
 ########## set directory and list files ########
-
+#getwd("C:/Users/abela/Documents/Uni_Jena/Masterarbeit/MAW-Co-culture")
 
 # set data directory for MS1 data files
 input_dir_MS1 <- paste(getwd(), "/MS1_pos_neg/", sep = "")
@@ -176,7 +176,7 @@ start.time <- Sys.time()
 # MS1 variables
 # pol <- c(x = polarity, start =0, stop = 0)
 ppm <- 25           # needed for missing value imputation
-ms1_intensity_cutoff <- 2000	          #approx. 0.01%, needed for bina list creation
+ms1_intensity_cutoff <- 14	          #approx. 0.01%, needed for bina list creation
 
 # mzml_times_ENDO <- NULL
 
@@ -428,7 +428,7 @@ table(polarity(msd))
 #} else if (condition_name == "ms1_data_ENDO_neg") {
   # set parameters
   # ENDO pos
-  ms1_params_ENDO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 51), 
+  ms1_params_ENDO_pos <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(12, 51), 
                                        prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
                                        integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                        fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -666,14 +666,14 @@ ev_pc = ms1_pca_ENDO_pos$sdev^2
 evplot(ev_pc)  
 dev.off()
 
-
-ms1_intensity_cutoff <- 2000
+ppm <- 35
+ms1_intensity_cutoff <- 14
 
 # Create single 0/1 matrix
 bina_list_ENDO_pos <- t(ms1_matrix_ENDO_pos)
 bina_list_ENDO_pos[is.na(bina_list_ENDO_pos)] <- 1
 bina_list_ENDO_pos <- log2(bina_list_ENDO_pos)
-bina_list_ENDO_pos[bina_list_ENDO_pos < log2(ms1_intensity_cutoff)] <- 0
+bina_list_ENDO_pos[bina_list_ENDO_pos < ms1_intensity_cutoff] <- 0
 bina_list_ENDO_pos[bina_list_ENDO_pos != 0] <- 1
 
 # save as csv
@@ -720,6 +720,8 @@ print(time.taken)
 
 
 ############# linking MS2 data #################
+start.time_linking <- Sys.time()
+
 # --------- preparations -----------
 # load object with MS1 and MS2 files preprocessed
 load(file = "endo_pos_1ms2_Results/MS_endo_pos_peak_detection.RData")
@@ -820,140 +822,145 @@ for (i in names(ms2_spectra_endo_pos)) {
 # Write MGF file
 cat(mgf_text, file="ms2_spectra_endo_pos.mgf", sep="\n")
 
+end.time_linking <- Sys.time()
+
+time.taken_linking <- end.time_linking - start.time_linking
+print(time.taken_linking)
+
 
 
 
 # ############################## MS1 statistics examples ##############################
 
-mzml_pheno_samples <- samp_groups_description
-mzml_pheno_colors <- color
-principal_components <- 5 # Pp, Sm, CoCuPp, CoCuSm, MB
-
-# comp_list
-comp_list <- feat_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
-colnames(comp_list) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
-
-# bina_list
-bina_list <- feat_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
-colnames(bina_list) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
-
-# uniq_list
-uniq_list <- uniq_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
-rownames(uniq_list_endo_pos) <- gsub(x=rownames(uniq_list_endo_pos), pattern="\\.auto.*", replacement="")
-colnames(uniq_list_endo_pos) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
-
-# Merge pos and pos div_classes
-div_classes <- div_classes_endo_pos
-div_classes_samples <- div_classes_samples_endo_pos
-
-# Merge pos and pos div_superclasses
-div_superclasses <- div_superclasses_endo_pos
-div_superclasses_samples <- div_superclasses_samples_endo_pos
-
-# Merge pos and pos div_subclasses
-div_subclasses <- div_subclasses_endo_pos
-div_subclasses_samples <- div_subclasses_samples_endo_pos
-
-# class_list
-class_list <- class_list_endo_pos
-rownames(class_list) <- gsub(x=rownames(class_list_endo_pos), pattern="\\.auto.*", replacement="")
-
-# class_int_list
-class_int_list <- class_int_list_endo_pos
-rownames(class_int_list) <- gsub(x=rownames(class_int_list_endo_pos), pattern="\\.auto.*", replacement="")
-
-# superclass_list
-superclass_list <- superclass_list_endo_pos
-rownames(superclass_list) <- gsub(x=rownames(superclass_list_endo_pos), pattern="\\.auto.*", replacement="")
-
-# superclass_int_list
-superclass_int_list <- superclass_int_list_endo_pos
-rownames(superclass_int_list) <- gsub(x=rownames(superclass_int_list_endo_pos), pattern="\\.auto.*", replacement="")
-
-# subclass_list
-subclass_list <- subclass_list_endo_pos
-rownames(subclass_list) <- gsub(x=rownames(subclass_list_endo_pos), pattern="\\.auto.*", replacement="")
-
-# subclass_int_list
-subclass_int_list <- subclass_int_list_endo_pos
-rownames(subclass_int_list) <- gsub(x=rownames(subclass_int_list_endo_pos), pattern="\\.auto.*", replacement="")
-
-cdk_descriptors <- cdk_descriptors_endo_pos
-
-# Create data frame
-model_div             <- data.frame(features=apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } ))
-model_div$richness    <- apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } )
-model_div$menhinick   <- apply(X=bina_list, MARGIN=1, FUN=function(x) { menhinick.diversity(x) } )
-model_div$shannon     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
-model_div$pielou      <- apply(X=scale(comp_list, center=FALSE, scale=FALSE), MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") / log(vegan::specnumber(x)) })
-#model_div$chao        <- vegan::specpool2vect(X=vegan::specpool(feat_list, species), index="chao")
-model_div$simpson     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="simpson") })
-model_div$inverse     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="inv") })
-model_div$fisher      <- apply(X=comp_list, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
-model_div$unique      <- apply(X=uniq_list, MARGIN=1, FUN=function(x) { sum(x) })
-model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list, compDisMat=scales::rescale(as.matrix(dist(t(comp_list)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
-
-# Plot Shannon index
-pdf(paste("plots/ms1_comp_list_diversity_shannon.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=5, height=5, family="Helvetica")
-boxplot(model_div$shannon ~ mzml_pheno_samples, col=mzml_pheno_colors, names=NA, main="Shannon diversity (H\')", xlab="treatment", ylab="Shannon diversity index (H\')")
-text(1:length(levels(mzml_pheno_samples)), par("usr")[3]-(par("usr")[4]-par("usr")[3])/14, srt=-22.5, adj=0.5, labels=levels(mzml_pheno_samples), xpd=TRUE, cex=0.9)
-div_tukey <- tukey.test(response=model_div$shannon, term=as.factor(mzml_pheno_samples))
-text(1:length(levels(mzml_pheno_samples)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
-dev.off()
-
-# PLS
-sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="plots/ms1_comp_list_select_pls_roc.pdf")
-print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_pls_comp_list$`_selected_variables_`, sel_names=paste0("         ",sel_pls_comp_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms1_comp_list_select_pls.pdf", main="PLS")
-heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms1_comp_list_select_pls.html", selfcontained=TRUE)
-sel_pls_comp_list$`_selected_variables_`
-sel_pls_comp_list$`_model_r2_`
-sel_pls_comp_list$`_multiclass_metrics_`
-
-
-
-# ############################## MS2 statistics examples ##############################
-
-# PLS
-sel_pls_class_list <- f.select_features_pls(feat_matrix=class_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="plots/ms2_class_list_select_pls_roc.pdf")
-print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_class_list$`_selected_variables_`)))
-f.heatmap.selected_features(feat_list=class_list, sel_feat=sel_pls_class_list$`_selected_variables_`, sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms2_class_list_select_pls.pdf", main="PLS")
-heatmaply(scale(class_list[, which(colnames(class_list) %in% sel_pls_class_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms2_class_list_select_pls.html", selfcontained=TRUE)
-sel_pls_class_list$`_multiclass_metrics_`
-sel_pls_class_list$`_model_r2_`
-
-
-
-# ############################## Molecular descriptors examples ##############################
-
-
-# Table L: samples x metabolites
-mdes_tab_l <- bina_list
-mdes_tab_l <- bina_list[, which(colnames(bina_list) %in% paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$smiles != "")], "_pos"))]
-mdes_tab_l <- as.data.frame(mdes_tab_l)
-
-# Table R: samples x species
-mdes_tab_r <- as.data.frame.matrix(table(rownames(mdes_tab_l), mzml_pheno_samples))
-rownames(mdes_tab_r) <- rownames(mdes_tab_l)
-
-# Table Q: metabolites x traits
-mdes_tab_q <- cdk_descriptors
-mdes_tab_q[is.na(mdes_tab_q)] <- 0
-
-# Perform matrix operation
-mdes_list <- as.data.frame(as.matrix(mdes_tab_l) %*% as.matrix(mdes_tab_q))
-
-# PLS
-sel_pls_mdes_list <- f.select_features_pls(feat_matrix=mdes_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.995, plot_roc_filename="plots/descriptors_bina_list_select_pls_roc.pdf")
-print(paste("Number of selected descriptors:", f.count.selected_features(sel_feat=sel_pls_mdes_list$`_selected_variables_`)))
-f.heatmap.selected_features(feat_list=mdes_list, sel_feat=sel_pls_mdes_list$`_selected_variables_`, sel_names=paste0("        ",sel_pls_mdes_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/descriptors_bina_list_select_pls.pdf", main="PLS")
-heatmaply(scale(mdes_list[, which(colnames(mdes_list) %in% sel_pls_mdes_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/descriptors_bina_list_select_pls.html", selfcontained=TRUE)
-sel_pls_mdes_list$`_multiclass_metrics_`
-sel_pls_mdes_list$`_model_r2_`
-sel_pls_mdes_list$`_selected_variables_`
-
-
-###################### MS1 statistics ##################
-# OPLS
-
+# mzml_pheno_samples <- samp_groups_description
+# mzml_pheno_colors <- color
+# principal_components <- 5 # Pp, Sm, CoCuPp, CoCuSm, MB
+# 
+# # comp_list
+# comp_list <- feat_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
+# colnames(comp_list) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
+# 
+# # bina_list
+# bina_list <- feat_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
+# colnames(bina_list) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
+# 
+# # uniq_list
+# uniq_list <- uniq_list_endo_pos[, c(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)])]
+# rownames(uniq_list_endo_pos) <- gsub(x=rownames(uniq_list_endo_pos), pattern="\\.auto.*", replacement="")
+# colnames(uniq_list_endo_pos) <- paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$has_ms2==1)], "_pos")
+# 
+# # Merge pos and pos div_classes
+# div_classes <- div_classes_endo_pos
+# div_classes_samples <- div_classes_samples_endo_pos
+# 
+# # Merge pos and pos div_superclasses
+# div_superclasses <- div_superclasses_endo_pos
+# div_superclasses_samples <- div_superclasses_samples_endo_pos
+# 
+# # Merge pos and pos div_subclasses
+# div_subclasses <- div_subclasses_endo_pos
+# div_subclasses_samples <- div_subclasses_samples_endo_pos
+# 
+# # class_list
+# class_list <- class_list_endo_pos
+# rownames(class_list) <- gsub(x=rownames(class_list_endo_pos), pattern="\\.auto.*", replacement="")
+# 
+# # class_int_list
+# class_int_list <- class_int_list_endo_pos
+# rownames(class_int_list) <- gsub(x=rownames(class_int_list_endo_pos), pattern="\\.auto.*", replacement="")
+# 
+# # superclass_list
+# superclass_list <- superclass_list_endo_pos
+# rownames(superclass_list) <- gsub(x=rownames(superclass_list_endo_pos), pattern="\\.auto.*", replacement="")
+# 
+# # superclass_int_list
+# superclass_int_list <- superclass_int_list_endo_pos
+# rownames(superclass_int_list) <- gsub(x=rownames(superclass_int_list_endo_pos), pattern="\\.auto.*", replacement="")
+# 
+# # subclass_list
+# subclass_list <- subclass_list_endo_pos
+# rownames(subclass_list) <- gsub(x=rownames(subclass_list_endo_pos), pattern="\\.auto.*", replacement="")
+# 
+# # subclass_int_list
+# subclass_int_list <- subclass_int_list_endo_pos
+# rownames(subclass_int_list) <- gsub(x=rownames(subclass_int_list_endo_pos), pattern="\\.auto.*", replacement="")
+# 
+# cdk_descriptors <- cdk_descriptors_endo_pos
+# 
+# # Create data frame
+# model_div             <- data.frame(features=apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } ))
+# model_div$richness    <- apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } )
+# model_div$menhinick   <- apply(X=bina_list, MARGIN=1, FUN=function(x) { menhinick.diversity(x) } )
+# model_div$shannon     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
+# model_div$pielou      <- apply(X=scale(comp_list, center=FALSE, scale=FALSE), MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") / log(vegan::specnumber(x)) })
+# #model_div$chao        <- vegan::specpool2vect(X=vegan::specpool(feat_list, species), index="chao")
+# model_div$simpson     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="simpson") })
+# model_div$inverse     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="inv") })
+# model_div$fisher      <- apply(X=comp_list, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
+# model_div$unique      <- apply(X=uniq_list, MARGIN=1, FUN=function(x) { sum(x) })
+# model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list, compDisMat=scales::rescale(as.matrix(dist(t(comp_list)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
+# 
+# # Plot Shannon index
+# pdf(paste("plots/ms1_comp_list_diversity_shannon.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=5, height=5, family="Helvetica")
+# boxplot(model_div$shannon ~ mzml_pheno_samples, col=mzml_pheno_colors, names=NA, main="Shannon diversity (H\')", xlab="treatment", ylab="Shannon diversity index (H\')")
+# text(1:length(levels(mzml_pheno_samples)), par("usr")[3]-(par("usr")[4]-par("usr")[3])/14, srt=-22.5, adj=0.5, labels=levels(mzml_pheno_samples), xpd=TRUE, cex=0.9)
+# div_tukey <- tukey.test(response=model_div$shannon, term=as.factor(mzml_pheno_samples))
+# text(1:length(levels(mzml_pheno_samples)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
+# dev.off()
+# 
+# # PLS
+# sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="plots/ms1_comp_list_select_pls_roc.pdf")
+# print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
+# f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_pls_comp_list$`_selected_variables_`, sel_names=paste0("         ",sel_pls_comp_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms1_comp_list_select_pls.pdf", main="PLS")
+# heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms1_comp_list_select_pls.html", selfcontained=TRUE)
+# sel_pls_comp_list$`_selected_variables_`
+# sel_pls_comp_list$`_model_r2_`
+# sel_pls_comp_list$`_multiclass_metrics_`
+# 
+# 
+# 
+# # ############################## MS2 statistics examples ##############################
+# 
+# # PLS
+# sel_pls_class_list <- f.select_features_pls(feat_matrix=class_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="plots/ms2_class_list_select_pls_roc.pdf")
+# print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_class_list$`_selected_variables_`)))
+# f.heatmap.selected_features(feat_list=class_list, sel_feat=sel_pls_class_list$`_selected_variables_`, sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms2_class_list_select_pls.pdf", main="PLS")
+# heatmaply(scale(class_list[, which(colnames(class_list) %in% sel_pls_class_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms2_class_list_select_pls.html", selfcontained=TRUE)
+# sel_pls_class_list$`_multiclass_metrics_`
+# sel_pls_class_list$`_model_r2_`
+# 
+# 
+# 
+# # ############################## Molecular descriptors examples ##############################
+# 
+# 
+# # Table L: samples x metabolites
+# mdes_tab_l <- bina_list
+# mdes_tab_l <- bina_list[, which(colnames(bina_list) %in% paste0(rownames(ms1_def_endo_pos)[which(ms1_def_endo_pos$smiles != "")], "_pos"))]
+# mdes_tab_l <- as.data.frame(mdes_tab_l)
+# 
+# # Table R: samples x species
+# mdes_tab_r <- as.data.frame.matrix(table(rownames(mdes_tab_l), mzml_pheno_samples))
+# rownames(mdes_tab_r) <- rownames(mdes_tab_l)
+# 
+# # Table Q: metabolites x traits
+# mdes_tab_q <- cdk_descriptors
+# mdes_tab_q[is.na(mdes_tab_q)] <- 0
+# 
+# # Perform matrix operation
+# mdes_list <- as.data.frame(as.matrix(mdes_tab_l) %*% as.matrix(mdes_tab_q))
+# 
+# # PLS
+# sel_pls_mdes_list <- f.select_features_pls(feat_matrix=mdes_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.995, plot_roc_filename="plots/descriptors_bina_list_select_pls_roc.pdf")
+# print(paste("Number of selected descriptors:", f.count.selected_features(sel_feat=sel_pls_mdes_list$`_selected_variables_`)))
+# f.heatmap.selected_features(feat_list=mdes_list, sel_feat=sel_pls_mdes_list$`_selected_variables_`, sel_names=paste0("        ",sel_pls_mdes_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/descriptors_bina_list_select_pls.pdf", main="PLS")
+# heatmaply(scale(mdes_list[, which(colnames(mdes_list) %in% sel_pls_mdes_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/descriptors_bina_list_select_pls.html", selfcontained=TRUE)
+# sel_pls_mdes_list$`_multiclass_metrics_`
+# sel_pls_mdes_list$`_model_r2_`
+# sel_pls_mdes_list$`_selected_variables_`
+# 
+# 
+# ###################### MS1 statistics ##################
+# # OPLS
+# 
 

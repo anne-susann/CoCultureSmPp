@@ -1,18 +1,32 @@
-library(Spectra)
-library(xcms)
-library(mzR)
-library(MSnbase)
-library(faahKO)
-library(RColorBrewer)
-library(pander)
-library(magrittr)
-library(pheatmap)
-library(SummarizedExperiment)
-library(knitr)
-library(ggplot2)
+# Load libraries
+#library(parallel)               # Detect number of cpu cores
+#library(foreach)                # For multicore parallel
+#library(doMC)                   # For multicore parallel
+library(RColorBrewer)           # For colors
+library(MSnbase)                # MS features
+library(xcms)                   # Swiss army knife for metabolomics
+library(CAMERA)                 # Metabolite Profile Annotation
+library(Spectra)                # Spectra package needed for XCMS3
 library(vegan)
+library(multcomp)               # For Tukey test
+library(Hmisc)                  # For correlation test
+library(gplots)                 # For fancy heatmaps
+library(circlize)               # For sunburst plot
+library(plotrix)                # For sunburst plot
+library(caret)                  # Swiss-army knife for statistics
+library(pROC)                   # Evaluation metrics
+library(PRROC)                  # Evaluation metrics
+library(multiROC)               # Evaluation metrics
+#library(chemodiv)               # Chemodiversity (Petren 2022)
+#library(rcdk)                   # CDK
+#library(rinchi)                 # Converting SMILES to InchiKey
+library(plotly)                 # For creating html plots
+library(htmlwidgets)            # For creating html plots
+#library(shiny)                  # HTML in R
+#library(sunburstR)              # HTML-sunburst plots
+#library(heatmaply)              # HTML heatmaps
 library(stringr)
-library(CAMERA)
+#library(iESTIMATE)
 
 start.time <- Sys.time()
 
@@ -77,29 +91,33 @@ MB1 <- "Media Blank"
 ms2 <- "MS2"
 
 # create vector with sample classes according to culture information sheet
-samp_groups_description <- c(CoCuPp1, CoCuSm1, CoCuSm1, CoCuPp1, CoCuPp1, CoCuSm1,
-                 rep(x = Sm1, times = 8), 
-                 rep(x = Pp1, times = 8),
-                 CoCuSm1, CoCuPp1, MB1, ms2, ms2, ms2, ms2, ms2)
+samp_groups <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
+                 rep(x = "Sm", times = 8), 
+                 rep(x = "Pp", times = 8),
+                 "CoCuSm", "CoCuPp", "MB", rep("MS2", length(raw_data_MS2_ENDO_pos)))
 
-samp_groups_description
+samp_groups_description <- c(CoCuPp1, CoCuSm1, CoCuSm1, CoCuPp1, CoCuPp1, CoCuSm1,
+                             rep(x = Sm1, times = 8), 
+                             rep(x = Pp1, times = 8),
+                             CoCuSm1, CoCuPp1, MB1, rep(ms2, length(raw_data_MS2_ENDO_pos)))
+
+#samp_groups_description
 
 # create vector with colors 
-CoCuPp1 <- ("royalblue4")
-CoCuSm1 <- rep("darksalmon", 2)
-CoCuPp2 <- rep("royalblue4", 2)
-CoCuSm2 <- ("darksalmon")
-Sm <- rep("violetred", 8)
-Pp <- rep("yellow2", 8)
-CoCuSm3 <- ("darksalmon")
-CoCuPp3 <- ("royalblue4")
-MB <- rep("springgreen", 1)
-ms2<- rep("aquamarine", 5)
+CoCuPp1 <- ("#3E134F")
+CoCuSm1 <- rep("#F36E35", 2)
+CoCuPp2 <- rep("#3E134F", 2)
+CoCuSm2 <- ("#F36E35")
+Sm <- rep("#F8B83C", 8)
+Pp <- rep("#C53270", 8)
+CoCuSm3 <- ("#F36E35")
+CoCuPp3 <- ("#3E134F")
+MB <- rep("#040404", 1)
+ms2<- rep("aquamarine", length(raw_data_MS2_endo_pos))
 color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB, ms2)
 
 
-
-all_files
+#all_files
 
 
 
@@ -108,22 +126,22 @@ pheno_data_ENDO <- data.frame(sample_name = all_files_names, sample_group = samp
 pheno_col_ENDO <- data.frame(color)
 
 
-pheno_data_ENDO
+#pheno_data_ENDO
 
 msd <- readMSData(files = all_files,
                   pdata = new("NAnnotatedDataFrame",pheno_data_ENDO),
                   mode = "onDisk",
                   centroided = TRUE)
-msd 
+#msd 
 
 # inspect data 
-table(msLevel(msd))
-head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
-                    "originalPeaksCount", "msLevel", 
-                    "polarity", "retentionTime")])
+#table(msLevel(msd))
+#head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
+#                    "originalPeaksCount", "msLevel", 
+#                    "polarity", "retentionTime")])
 
-# Restrict data to 1020 seconds (17 minutes)
-msd <- filterRt(msd, c(0, 1020))
+# Restrict data to 650 seconds
+msd <- filterRt(msd, c(0, 650))
 
 # for MS2 level filter polarity
 #msd <- filterPolarity(msd, polarity = 1)
@@ -147,14 +165,14 @@ write.csv(fData(msd), file=paste(filename = "endo_pos_Results/ENDO_pos_raw_data.
 
 
 # Get base peak chromatograms
-register(bpstart(SnowParam()))
+#register(bpstart(SnowParam()))
 # setwd(input_dir_MS1_polarity)
 
 chromas_ENDO_pos <- chromatogram(msd, 
                              aggregationFun="max", 
                              msLevel = 1,
                              BPPARAM = SnowParam(workers = 3))
-chromas_ENDO_pos
+#chromas_ENDO_pos
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/ENDO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
@@ -207,15 +225,15 @@ head(intensity(chromas_ENDO_pos[1, 1]))
 head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
 table(polarity(msd))
 
-ms_params_ENDO_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 51), 
+ms_params_ENDO_pos <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(12, 51), 
                                      prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
-ms_params_ENDO_pos
+#ms_params_ENDO_pos
 
 # CHOSE THE PARAMETERS 
 ms_data_ENDO_pos <- findChromPeaks(msd, param=ms_params_ENDO_pos)
-ms_data_ENDO_pos
+#ms_data_ENDO_pos
 
 # check the detected peaks
 head(chromPeaks(ms_data_ENDO_pos))
@@ -230,7 +248,7 @@ ms_summary_ENDO_pos <- do.call(rbind, ms_summary_ENDO_pos)
 rownames(ms_summary_ENDO_pos) <- basename(fileNames(ms_data_ENDO_pos))
 rownames(ms_summary_ENDO_pos)
 
-print(ms_summary_ENDO_pos)
+#print(ms_summary_ENDO_pos)
 
 table(msLevel(ms_data_ENDO_pos))
 
@@ -252,7 +270,7 @@ ms_data_ENDO_pos
 
 ## RT correction
 ms_data_ENDO_pos <- adjustRtime(ms_data_ENDO_pos, param=PeakGroupsParam(
-  minFraction=0.7,smooth="loess",span=0.8,family="gaussian"))
+  minFraction=0.7,smooth="loess",span=0.7,family="gaussian"))
 
 # Plot the difference of raw and adjusted retention times
 #pdf(file="plots/ENDO_ms1_raw_adjusted.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=8, family="Helvetica")
@@ -273,8 +291,8 @@ print(head(featureValues(ms_data_ENDO_pos, value="into")))
 ppm <- 35  
 
 # missing value imputation, see xcmsSet
-ms_data_ENDO_pos <- fillChromPeaks(ms_data_ENDO_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
-ms_data_ENDO_pos
+#ms_data_ENDO_pos <- fillChromPeaks(ms_data_ENDO_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
+#ms_data_ENDO_pos
 
 head(featureValues(ms_data_ENDO_pos))
 head(featureSummary(ms_data_ENDO_pos, group=ms_data_ENDO_pos$sample_group))
@@ -351,12 +369,16 @@ ms_def_ENDO_pos <- featureDefinitions(ms_data_ENDO_pos)
 
 
 # Missing value imputation by filling na positions with median of surrounding features
-feat_list_ENDO_pos[is.na(feat_list_ENDO_pos)] <- median(na.omit(as.numeric(unlist(feat_list_ENDO_pos))))
+#feat_list_ENDO_pos[is.na(feat_list_ENDO_pos)] <- median(na.omit(as.numeric(unlist(feat_list_ENDO_pos))))
+
 ### Transform data
 feat_list_ENDO_pos <- log2(feat_list_ENDO_pos)
 
+# change 0 to small value to distinguish between values of 1 and NA
+feat_list_ENDO_pos[which(feat_list_ENDO_pos == 0)] <- 0.01
+
 # Missing value imputation
-feat_list_ENDO_pos[which(is.na(feat_list_ENDO_pos))] <- median(na.omit(as.numeric(unlist(feat_list_ENDO_pos))))
+feat_list_ENDO_pos[which(is.na(feat_list_ENDO_pos))] <- 0
 
 # save as csv
 write.csv(feat_list_ENDO_pos, file=paste(filename = "endo_pos_Results/feature_list_ENDO_pos.csv", sep = ""))
@@ -407,13 +429,13 @@ evplot(ev_pc)
 dev.off()
 
 
-ms_intensity_cutoff <- 100
+ms_intensity_cutoff <- 14
 
 # Create single 0/1 matrix
 bina_list_ENDO_pos <- t(ms_matrix_ENDO_pos)
 bina_list_ENDO_pos[is.na(bina_list_ENDO_pos)] <- 1
 bina_list_ENDO_pos <- log2(bina_list_ENDO_pos)
-bina_list_ENDO_pos[bina_list_ENDO_pos < log2(ms_intensity_cutoff)] <- 0
+bina_list_ENDO_pos[bina_list_ENDO_pos < ms_intensity_cutoff] <- 0
 bina_list_ENDO_pos[bina_list_ENDO_pos != 0] <- 1
 
 
@@ -446,6 +468,11 @@ write.csv(model_div_ENDO_pos, file=paste(filename = "endo_pos_Results/model_div_
 
 
 # save the objects and tables
+write.csv(model_div_endo_pos, file=paste(filename = "endo_pos_1ms2_Results/model_div_endo_pos.csv", sep = ""))
+
+# save the objects and tables
+save(ms_def_endo_pos, file = "endo_pos_1ms2_Results/ms_def_endo_pos.RData")
+save.image(file = "endo_pos_1ms2_Results/ENDO_pos_1MS2_environment.RData")
 
 
 

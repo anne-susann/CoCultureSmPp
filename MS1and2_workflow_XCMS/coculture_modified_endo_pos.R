@@ -1,10 +1,8 @@
-
-
 # ---------- Preparations ----------
 # Load libraries
-library(parallel)               # Detect number of cpu cores
-library(foreach)                # For multicore parallel
-library(doMC)                   # For multicore parallel
+#library(parallel)               # Detect number of cpu cores
+#library(foreach)                # For multicore parallel
+#library(doMC)                   # For multicore parallel
 library(RColorBrewer)           # For colors
 library(MSnbase)                # MS features
 library(xcms)                   # Swiss army knife for metabolomics
@@ -20,20 +18,22 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-library(chemodiv)               # Chemodiversity (Petren 2022)
-library(rcdk)                   # CDK
-library(rinchi)                 # Converting SMILES to InchiKey
+#library(chemodiv)               # Chemodiversity (Petren 2022)
+#library(rcdk)                   # CDK
+#library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
-library(shiny)                  # HTML in R
-library(sunburstR)              # HTML-sunburst plots
-library(heatmaply)              # HTML heatmaps
+#library(shiny)                  # HTML in R
+#library(sunburstR)              # HTML-sunburst plots
+#library(heatmaply)              # HTML heatmaps
 library(stringr)
 #library(iESTIMATE)
+
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
 ########## set directory and list files ########
 
+start.time <- Sys.time()
 # set data directory for MS1 data files
 input_dir_MS1 <- paste(getwd(), "/MS1_pos_neg/", sep = "")
 input_dir_MS1
