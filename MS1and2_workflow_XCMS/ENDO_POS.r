@@ -47,11 +47,11 @@ files_MS2 <- list.files(input_dir_MS2)
 files_MS2
 
 # create plot directory
-if (dir.exists(paste(getwd(), "/endo_pos_plots/", sep = ""))){
+if (dir.exists(paste(getwd(), "/endo_pos_1ms2_plots/", sep = ""))){
   print("plots directory already exists")
   start_time <- Sys.time()
 }  else{
-  dir.create("endo_pos_plots")
+  dir.create("endo_pos_1ms2_plots")
   start_time <- Sys.time()
   print("plots folder has been created")
 }
@@ -152,15 +152,15 @@ msd <- filterRt(msd, c(0, 650))
 #table(msLevel(msd))
 
 # create result directory
-if (dir.exists(paste(getwd(), "/endo_pos_Results/", sep = ""))){
+if (dir.exists(paste(getwd(), "/endo_pos_1ms2_Results/", sep = ""))){
   print("plots directory already exists")
   start_time <- Sys.time()
 }  else{
-  dir.create("endo_pos_Results")
+  dir.create("endo_pos_1ms2_Results")
   start_time <- Sys.time()
   print("results folder has been created")
 }
-write.csv(fData(msd), file=paste(filename = "endo_pos_Results/ENDO_pos_raw_data.csv", sep = ""), row.names=FALSE)
+write.csv(fData(msd), file=paste(filename = "endo_pos_1ms2_Results/ENDO_pos_raw_data.csv", sep = ""), row.names=FALSE)
 
 
 
@@ -171,26 +171,26 @@ write.csv(fData(msd), file=paste(filename = "endo_pos_Results/ENDO_pos_raw_data.
 chromas_ENDO_pos <- chromatogram(msd, 
                              aggregationFun="max", 
                              msLevel = 1,
-                             BPPARAM = SnowParam(workers = 3))
+                             )
 #chromas_ENDO_pos
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/ENDO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
-jpeg(filename = "endo_pos_plots/ENDO_pos_chromas.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+jpeg(filename = "endo_pos_1ms2_plots/ENDO_pos_chromas.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 plot(chromas_ENDO_pos, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
-legend("topleft", bty="n", pt.cex=2, cex=1,5, y.intersp=0.7, text.width=0.5, pch=20, 
+legend("topleft", bty="n", pt.cex=3, cex=1.5, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(msd@phenoData@data[["sample_group"]]))
 dev.off()
 
 
 # Get TICs
 #pdf(file="plots/ENDO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "endo_pos_plots/ENDO_pos_tics.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(5,4,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=0.4, cex.lab=2, cex.main=2)
+jpeg(filename = "endo_pos_1ms2_plots/ENDO_pos_tics.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 tics_ENDO_pos <- split(tic(msd), f=fromFile(msd))
 boxplot(tics_ENDO_pos, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
-legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+legend("topleft", bty="n", pt.cex=2, cex=1, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(msd@phenoData@data[["sample_group"]]))
 dev.off()
 
@@ -211,8 +211,8 @@ colnames(chromas_bin_cor_ENDO_pos) <- rownames(chromas_bin_cor_ENDO_pos) <- msd$
 chromas_bin_cor_ENDO_pos[is.na(chromas_bin_cor_ENDO_pos)] <- 0
 
 
-jpeg(filename = "endo_pos_plots/heatmap_chromas_bin_ENDO_pos.jpeg", width = 500, height = 500, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+jpeg(filename = "endo_pos_1ms2_plots/heatmap_chromas_bin_ENDO_pos.jpeg", width = 1000, height = 1000, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(7,0,0,7), cex.axis=0.9, cex=0.6)
 heatmap(chromas_bin_cor_ENDO_pos)
 dev.off()
 
@@ -254,14 +254,14 @@ table(msLevel(ms_data_ENDO_pos))
 
 
 
-write.csv(as.data.frame(table(msLevel(ms_data_ENDO_pos))), file="endo_pos_Results/ENDO_pos_ms_data.csv", row.names=FALSE)
+write.csv(as.data.frame(table(msLevel(ms_data_ENDO_pos))), file="endo_pos_1ms2_Results/ENDO_pos_ms_data.csv", row.names=FALSE)
 
-jpeg(filename = "endo_pos_plots/ENDO_pos_ms_data.jpeg", width = 1000, height = 600, quality = 100, bg = "white")
-par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.6)
+jpeg(filename = "endo_pos_1ms2_plots/endo_pos_ms_data.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
+par(mfrow=c(1,1), mar=c(4,18,4,1), oma=c(0,0,0,0), cex.axis=1, cex=2, cex.lab=2, cex.main=2)
 plotChromPeakImage(ms_data_ENDO_pos, main="Frequency of identified peaks per RT", binSize = 20)
-#dev.off()
+dev.off()
 
-plotChromPeakImage(ms_data_ENDO_pos, main="Frequency of identified peaks per RT", binSize = 20)
+#plotChromPeakImage(ms_data_ENDO_pos, main="Frequency of identified peaks per RT", binSize = 20)
 
 ## Group peaks
 ms_data_ENDO_pos <- groupChromPeaks(ms_data_ENDO_pos, param=PeakDensityParam(
@@ -274,11 +274,12 @@ ms_data_ENDO_pos <- adjustRtime(ms_data_ENDO_pos, param=PeakGroupsParam(
 
 # Plot the difference of raw and adjusted retention times
 #pdf(file="plots/ENDO_ms1_raw_adjusted.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=8, family="Helvetica")
-jpeg(filename = "endo_pos_plots/ENDO_pos_ms_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
+jpeg(filename = "endo_pos_1ms2_plots/ENDO_pos_ms_raw_adjusted.jpeg", width = 500, height = 1000, quality = 100, bg = "white")
 par(mfrow=c(2,1), mar=c(4.5,4.2,4,1), cex=0.8)
 plot(chromas_ENDO_pos, peakType="none", main="Raw chromatograms")
-plotAdjustedRtime(ms_data_ENDO_pos, lwd=2, main="Retention Time correction")
+plotAdjustedRtime(filterRt(ms_data_ENDO_pos, rt = c(0, 670)), lwd=2, main="Retention Time correction")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(0,0,0,0), cex.axis=0.9, cex=0.8)
+text(labels=ms_data_ENDO_pos$sample_name, pos=3, cex=1)
 dev.off()
 
 ## Group peaks
@@ -287,8 +288,6 @@ ms_data_ENDO_pos <- groupChromPeaks(ms_data_ENDO_pos, param=PeakDensityParam(
 
 # Get integrated peak intensity per feature/sample
 print(head(featureValues(ms_data_ENDO_pos, value="into")))
-
-ppm <- 35  
 
 # missing value imputation, see xcmsSet
 #ms_data_ENDO_pos <- fillChromPeaks(ms_data_ENDO_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
@@ -301,20 +300,21 @@ head(featureSummary(ms_data_ENDO_pos, group=ms_data_ENDO_pos$sample_group))
 
 # Evaluate grouping
 #pdf(file="plots/ENDO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "endo_pos_plots/ENDO_pos_ms_grouping.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+jpeg(filename = "endo_pos_1ms2_plots/ENDO_pos_ms_grouping.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
 ms_pca_ENDO_pos <- prcomp(t(na.omit(log2(featureValues(ms_data_ENDO_pos, value="into")))), center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms_pca_ENDO_pos$x[, 1], ms_pca_ENDO_pos$x[,2], pch=19, main="PCA: Grouping of samples",
      xlab=paste0("PC1: ", format(summary(ms_pca_ENDO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms_pca_ENDO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
-     col=color, cex=0.8)
+     col=color, cex=2)
 grid()
-text(ms_pca_ENDO_pos$x[, 1], ms_pca_ENDO_pos$x[,2], labels=ms_data_ENDO_pos$sample_name, col=color, pos=3, cex=0.9)
-legend("topleft", bty="n", pt.cex=1, cex=0.8, y.intersp=0.7, text.width=0.5, pch=20, 
+text(ms_pca_ENDO_pos$x[, 1], ms_pca_ENDO_pos$x[,2], labels=str_sub(ms_data_ENDO_pos$sample_name, - 3, - 1), col=color, pos=3, cex=0.9)
+legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(ms_data_ENDO_pos@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
-png("endo_pos_plots/BrokenStick_ENDO_pos_ms_grouping.png", width=10, height=6, units="in", res=100)
+png("endo_pos_1ms2_plots/BrokenStick_ENDO_pos_ms_grouping.png", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -351,7 +351,7 @@ MS_ENDO_pos_peak_detection <- ms_data_ENDO_pos
 
 
 
-save(MS_ENDO_pos_peak_detection, file = "endo_pos_Results/MS_ENDO_pos_peak_detection.RData")
+save(MS_ENDO_pos_peak_detection, file = "endo_pos_1ms2_Results/MS_endo_pos_peak_detection.RData")
 
 # ---------- Build MS1 feature tables ----------
 # Build feature matrix
@@ -381,30 +381,31 @@ feat_list_ENDO_pos[which(feat_list_ENDO_pos == 0)] <- 0.01
 feat_list_ENDO_pos[which(is.na(feat_list_ENDO_pos))] <- 0
 
 # save as csv
-write.csv(feat_list_ENDO_pos, file=paste(filename = "endo_pos_Results/feature_list_ENDO_pos.csv", sep = ""))
+write.csv(feat_list_ENDO_pos, file=paste(filename = "endo_pos_1ms2_Results/feature_list_ENDO_pos.csv", sep = ""))
 
 # Plot histogram
 #pdf(file="plots/ENDO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "endo_pos_plots/ENDO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
+jpeg(filename = "endo_pos_1ms2_plots/ENDO_pos_feat_list_hist.jpeg", width = 500, height = 500, quality = 150, bg = "white")
 hist(as.numeric(feat_list_ENDO_pos), main="Histogram of feature table")
 dev.off()
 
 # PCA of feature table results
 #pdf(file="plots/ENDO_ms1_feature_table_pca.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "endo_pos_plots/ENDO_pos_ms_feature_table_pca.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
+jpeg(filename = "endo_pos_1ms2_plots/ENDO_pos_ms_feature_table_pca.jpeg", width = 1000, height = 500, quality = 150, bg = "white")
 ms_pca_ENDO_pos <- prcomp(feat_list_ENDO_pos, center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms_pca_ENDO_pos$x[, 1], ms_pca_ENDO_pos$x[,2], pch=19, main="PCA of feature table",
      xlab=paste0("PC1: ", format(summary(ms_pca_ENDO_pos)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms_pca_ENDO_pos)$importance[2, 2] * 100, digits=3), " % variance"),
-     col=color, cex=0.8)
+     col=color, cex=2)
 grid()
-text(ms_pca_ENDO_pos$x[, 1], ms_pca_ENDO_pos$x[,2], labels=ms_data_ENDO_pos$sample_name, col=color, pos=3, cex=0.9)
-legend("topleft", bty="n", pt.cex=1, cex=1, y.intersp=0.7, text.width=0.5, pch=20, 
+text(ms_pca_ENDO_pos$x[, 1], ms_pca_ENDO_pos$x[,2], labels=str_sub(ms_data_ENDO_pos$sample_name, - 3, - 1), col=color, pos=3, cex=0.9)
+legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color), legend= unique(ms_data_ENDO_pos@phenoData@data[["sample_group"]]))
 dev.off()
 
 # broken stick
-jpeg("endo_pos_plots/BrokenStick_ENDO_pos_ms_feature_table_pca.jpeg", width=10, height=6, units="in", res=100)
+jpeg("endo_pos_1ms2_plots/BrokenStick_ENDO_pos_ms_feature_table_pca.jpeg", width=10, height=6, units="in", res=100)
 evplot = function(ev) {  
   # Broken stick model (MacArthur 1957)  
   n = length(ev)  
@@ -429,6 +430,8 @@ evplot(ev_pc)
 dev.off()
 
 
+ppm <- 35  
+
 ms_intensity_cutoff <- 14
 
 # Create single 0/1 matrix
@@ -440,7 +443,7 @@ bina_list_ENDO_pos[bina_list_ENDO_pos != 0] <- 1
 
 
 # save as csv
-write.csv(bina_list_ENDO_pos, file=paste(filename = "endo_pos_Results/bina_list_ENDO_pos.csv", sep = ""))
+write.csv(bina_list_ENDO_pos, file=paste(filename = "endo_pos_1ms2_Results/bina_list_ENDO_pos.csv", sep = ""))
 
 # Only unique compounds in group mzml_pheno$ and not the others
 uniq_list_ENDO_pos <- apply(X=bina_list_ENDO_pos, MARGIN=2, FUN=function(x) { if (length(unique(pheno_data_ENDO$sample_group[grepl("1", x)])) == 1) x else rep(0, length(x)) } )
@@ -459,19 +462,21 @@ model_div_ENDO_pos$simpson     <- apply(X=feat_list_ENDO_pos, MARGIN=1, FUN=func
 model_div_ENDO_pos$inverse     <- apply(X=feat_list_ENDO_pos, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="inv") })
 model_div_ENDO_pos$fisher      <- apply(X=feat_list_ENDO_pos, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
 model_div_ENDO_pos$unique      <- apply(X=uniq_list_ENDO_pos, MARGIN=1, FUN=function(x) { sum(x) })
+# funtional hill
+#model_div_pos$hillfunc    <- as.numeric(unlist(calcDiv(feat_list_endo_pos, compDisMat=scales::rescale(as.matrix(dist(t(feat_list_endo_pos)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
 
 # Remove NAs if present
 model_div_ENDO_pos[is.na(model_div_ENDO_pos)] <- 0
 
 # save as csv
-write.csv(model_div_ENDO_pos, file=paste(filename = "endo_pos_Results/model_div_ENDO_pos.csv", sep = ""))
+write.csv(model_div_ENDO_pos, file=paste(filename = "endo_pos_1ms2_Results/model_div_ENDO_pos.csv", sep = ""))
 
 
 # save the objects and tables
-write.csv(model_div_endo_pos, file=paste(filename = "endo_pos_1ms2_Results/model_div_endo_pos.csv", sep = ""))
+write.csv(model_div_ENDO_pos, file=paste(filename = "endo_pos_1ms2_Results/model_div_endo_pos.csv", sep = ""))
 
 # save the objects and tables
-save(ms_def_endo_pos, file = "endo_pos_1ms2_Results/ms_def_endo_pos.RData")
+save(ms_def_ENDO_pos, file = "endo_pos_1ms2_Results/ms_def_endo_pos.RData")
 save.image(file = "endo_pos_1ms2_Results/ENDO_pos_1MS2_environment.RData")
 
 

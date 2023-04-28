@@ -222,7 +222,7 @@ head(intensity(chromas_endo_pos[1, 1]))
 head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
 table(polarity(msd))
 
-ms_params_endo_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 51), 
+ms_params_endo_pos <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(12, 51), 
                                     prefilter=c(4, 60), mzdiff= 0.000099, snthresh=6, noise=0, 
                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -427,13 +427,13 @@ evplot(ev_pc)
 dev.off()
 
 
-ms_intensity_cutoff <- 2000
+ms_intensity_cutoff <- 14
 
 # Create single 0/1 matrix
 bina_list_endo_pos <- t(ms_matrix_endo_pos)
 bina_list_endo_pos[is.na(bina_list_endo_pos)] <- 1
 bina_list_endo_pos <- log2(bina_list_endo_pos)
-bina_list_endo_pos[bina_list_endo_pos < log2(ms_intensity_cutoff)] <- 0
+bina_list_endo_pos[bina_list_endo_pos < ms_intensity_cutoff] <- 0
 bina_list_endo_pos[bina_list_endo_pos != 0] <- 1
 
 

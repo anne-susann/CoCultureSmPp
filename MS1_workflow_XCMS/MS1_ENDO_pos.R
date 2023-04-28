@@ -175,7 +175,7 @@ start.time <- Sys.time()
 
 # MS1 variables
 # pol <- c(x = polarity, start =0, stop = 0)
-ppm <- 25           # needed for missing value imputation
+ppm <- 35           # needed for missing value imputation
 ms1_intensity_cutoff <- 14	          #approx. 0.01%, needed for bina list creation
 
 # mzml_times_ENDO <- NULL
@@ -289,10 +289,10 @@ msd <- readMSData(files = paste(input_dir_MS1_polarity, MS1_ENDO_pos_files, sep 
                   centroided = TRUE)
 
 # inspect data 
-table(msLevel(msd))
-head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
-                    "originalPeaksCount", "msLevel", 
-                    "polarity", "retentionTime")])
+#table(msLevel(msd))
+#head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
+#                    "originalPeaksCount", "msLevel", 
+#                    "polarity", "retentionTime")])
 
 # for MS2 data subset polarity again to pos = 1
 #msd <- filterPolarity(msd, polarity = 1)
@@ -302,7 +302,7 @@ msd <- filterRt(msd, c(0, 700))
 
 # subset data for msLevel = 1 and save raw data
 #msd <- filterMsLevel(msd, msLevel = 1)
-table(polarity(msd))
+#table(polarity(msd))
 write.csv(fData(msd), file=paste(filename = "endo_pos_Results/ENDO_pos_raw_data.csv", sep = ""), row.names=FALSE)
 
 # # Inspect mz values per file

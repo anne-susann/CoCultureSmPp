@@ -1,10 +1,12 @@
-## Processing of MS1 and MS2 data together for MS2 spectra annotation
+# MS1 data pre-processing and statistical analysis with xcms
+# Parameters for peak detection calculated with IPO
+# Ms2 data relation to MS1 precursors and preparation for annotation by MAW
 
-# ---------- Preparations ----------
+###---- library ----
 # Load libraries
-library(parallel)               # Detect number of cpu cores
-library(foreach)                # For multicore parallel
-library(doMC)                   # For multicore parallel
+#library(parallel)               # Detect number of cpu cores
+#library(foreach)                # For multicore parallel
+#library(doMC)                   # For multicore parallel
 library(RColorBrewer)           # For colors
 library(MSnbase)                # MS features
 library(xcms)                   # Swiss army knife for metabolomics
@@ -20,14 +22,14 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-library(chemodiv)               # Chemodiversity (Petren 2022)
-library(rcdk)                   # CDK
-library(rinchi)                 # Converting SMILES to InchiKey
+#library(chemodiv)               # Chemodiversity (Petren 2022)
+#library(rcdk)                   # CDK
+#library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
-library(shiny)                  # HTML in R
-library(sunburstR)              # HTML-sunburst plots
-library(heatmaply)              # HTML heatmaps
+#library(shiny)                  # HTML in R
+#library(sunburstR)              # HTML-sunburst plots
+#library(heatmaply)              # HTML heatmaps
 library(stringr)
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
@@ -82,7 +84,7 @@ all_files_names
 samp_groups <- c("CoCuPp", "CoCuSm", "CoCuSm", "CoCuPp", "CoCuPp", "CoCuSm",
                  rep(x = "Sm", times = 8), 
                  rep(x = "Pp", times = 8),
-                 "CoCuSm", "CoCuPp", "MB", rep("MS2", length(raw_data_MS2_exo_neg)))
+                 "CoCuSm", "CoCuPp", "MB", rep("MS2", length(raw_data_MS2_EXO_neg)))
 
 CoCuPp1 <- "Co-culture sample from Prymnesium parvum"
 CoCuSm1 <- "Co-culture sample from Skeletonema marinoi"
@@ -95,21 +97,21 @@ ms2 <- "MS2"
 samp_groups_description <- c(CoCuPp1, CoCuSm1, CoCuSm1, CoCuPp1, CoCuPp1, CoCuSm1,
                              rep(x = Sm1, times = 8), 
                              rep(x = Pp1, times = 8),
-                             CoCuSm1, CoCuPp1, MB1, rep(ms2, length(raw_data_MS2_exo_neg)))
+                             CoCuSm1, CoCuPp1, MB1, rep(ms2, length(raw_data_MS2_EXO_neg)))
 
 samp_groups_description
 
 # create vector with colors 
-CoCuPp1 <- ("royalblue4")
-CoCuSm1 <- rep("darksalmon", 2)
-CoCuPp2 <- rep("royalblue4", 2)
-CoCuSm2 <- ("darksalmon")
-Sm <- rep("violetred", 8)
-Pp <- rep("yellow2", 8)
-CoCuSm3 <- ("darksalmon")
-CoCuPp3 <- ("royalblue4")
-MB <- rep("springgreen", 1)
-ms2<- rep("aquamarine", length(raw_data_MS2_exo_neg))
+CoCuPp1 <- ("#3E134F")
+CoCuSm1 <- rep("#F36E35", 2)
+CoCuPp2 <- rep("#3E134F", 2)
+CoCuSm2 <- ("#F36E35")
+Sm <- rep("#F8B83C", 8)
+Pp <- rep("#C53270", 8)
+CoCuSm3 <- ("#F36E35")
+CoCuPp3 <- ("#3E134F")
+MB <- rep("#040404", 1)
+ms2<- rep("aquamarine", length(raw_data_MS2_EXO_pos))
 color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB, ms2)
 
 
@@ -121,13 +123,13 @@ pheno_data_EXO <- data.frame(sample_name = all_files_names, sample_group = samp_
 pheno_col_EXO <- data.frame(color)
 
 
-pheno_data_EXO
+#pheno_data_EXO
 
 msd <- readMSData(files = all_files,
                   pdata = new("NAnnotatedDataFrame",pheno_data_EXO),
                   mode = "onDisk",
                   centroided = TRUE)
-msd 
+#msd 
 
 # inspect data 
 table(msLevel(msd))
@@ -135,8 +137,8 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
                     "originalPeaksCount", "msLevel", 
                     "polarity", "retentionTime")])
 
-# Restrict data to 700 seconds 
-msd <- filterRt(msd, c(0, 700))
+# Restrict data to 650 seconds 
+msd <- filterRt(msd, c(0, 650))
 
 # ONLY FOR MS1 DATA
 # subset data for msLevel = 1 and save raw data 
@@ -162,9 +164,9 @@ write.csv(fData(msd), file=paste(filename = "exo_neg_1ms2_Results/EXO_neg_raw_da
 
 chromas_exo_neg <- chromatogram(msd, 
                              aggregationFun="max", 
-                             msLevel = 1,
-                             BPPARAM = SnowParam(workers = 3))
-chromas_exo_neg
+                             #msLevel = 1
+                             )
+#chromas_exo_neg
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/EXO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
@@ -218,7 +220,7 @@ head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
 table(polarity(msd))
 
 # EXO neg 
-ms_params_EXO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 53), 
+ms_params_EXO_neg <- CentWaveParam(ppm=35, mzCenterFun="wMean", peakwidth=c(12, 53), 
                                      prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
                                      integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                      fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -263,7 +265,7 @@ ms_data_exo_neg
 
 ## RT correction
 ms_data_exo_neg <- adjustRtime(ms_data_exo_neg, param=PeakGroupsParam(
-  minFraction=0.7,smooth="loess",span=0.5,family="gaussian"))
+  minFraction=0.7,smooth="loess",span=0.7,family="gaussian"))
 
 # Plot the difference of raw and adjusted retention times
 #pdf(file="plots/EXO_ms1_raw_adjusted.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=8, family="Helvetica")
@@ -282,14 +284,14 @@ ms_data_exo_neg <- groupChromPeaks(ms_data_exo_neg, param=PeakDensityParam(
 # Get integrated peak intensity per feature/sample
 print(head(featureValues(ms_data_exo_neg, value="into")))
 
-ppm <- 25  
+ppm <- 35  
 
 # missing value imputation, see xcmsSet
 #ms_data_exo_neg <- fillChromPeaks(ms_data_exo_neg, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
-ms_data_exo_neg
+#ms_data_exo_neg
 
-head(featureValues(ms_data_exo_neg))
-head(featureSummary(ms_data_exo_neg, group=ms_data_exo_neg$sample_group))
+#head(featureValues(ms_data_exo_neg))
+#head(featureSummary(ms_data_exo_neg, group=ms_data_exo_neg$sample_group))
 
 
 
@@ -420,14 +422,14 @@ ev_pc = ms_pca_exo_neg$sdev^2
 evplot(ev_pc)  
 dev.off()
 
-ms_intensity_cutoff <- 2000
-ppm <- 25
+ms_intensity_cutoff <- 14
+ppm <- 35
 
 # Create single 0/1 matrix
 bina_list_exo_neg <- t(ms_matrix_exo_neg)
 bina_list_exo_neg[is.na(bina_list_exo_neg)] <- 1
 bina_list_exo_neg <- log2(bina_list_exo_neg)
-bina_list_exo_neg[bina_list_exo_neg < log2(ms_intensity_cutoff)] <- 0
+bina_list_exo_neg[bina_list_exo_neg < ms_intensity_cutoff] <- 0
 bina_list_exo_neg[bina_list_exo_neg != 0] <- 1
 
 # save as csv

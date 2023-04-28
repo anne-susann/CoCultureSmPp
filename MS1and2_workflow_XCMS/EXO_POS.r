@@ -1,8 +1,13 @@
-# ---------- Preparations ----------
+### Analysis of diatom Mono- and Co-culture MS data
+# MS1 data pre-processing and statistical analysis with xcms
+# Parameters for peak detection calculated with IPO
+# Ms2 data relation to MS1 precursors and preparation for annotation by MAW
+
+###---- library ----
 # Load libraries
-library(parallel)               # Detect number of cpu cores
-library(foreach)                # For multicore parallel
-library(doMC)                   # For multicore parallel
+#library(parallel)               # Detect number of cpu cores
+#library(foreach)                # For multicore parallel
+#library(doMC)                   # For multicore parallel
 library(RColorBrewer)           # For colors
 library(MSnbase)                # MS features
 library(xcms)                   # Swiss army knife for metabolomics
@@ -18,21 +23,23 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-library(chemodiv)               # Chemodiversity (Petren 2022)
-library(rcdk)                   # CDK
-library(rinchi)                 # Converting SMILES to InchiKey
+#library(chemodiv)               # Chemodiversity (Petren 2022)
+#library(rcdk)                   # CDK
+#library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
-library(shiny)                  # HTML in R
-library(sunburstR)              # HTML-sunburst plots
-library(heatmaply)              # HTML heatmaps
-library(stringr)
+#library(shiny)                  # HTML in R
+#library(sunburstR)              # HTML-sunburst plots
+#library(heatmaply)              # HTML heatmaps
+library(stringr)              
+library(randomForest)           # Random forest
+library(MetaboAnalystR)         # Random forest
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
-start.time <- Sys.time()
-
 ########## set directory and list files ########
+
+start.time <- Sys.time()
 
 # set data directory for MS1 data files
 input_dir_MS1 <- paste(getwd(), "/MS1_pos_neg/", sep = "")
@@ -104,7 +111,7 @@ samp_groups_description <- c(CoCuPp1, CoCuSm1, CoCuSm1, CoCuPp1, CoCuPp1, CoCuSm
                  rep(x = Pp1, times = 8),
                  CoCuSm1, CoCuPp1, MB1, rep(x = ms2, times = length(raw_data_MS2_exo_pos)))
 
-samp_groups_description
+#samp_groups_description
 
 # create vector with colors 
 CoCuPp1 <- ("#3E134F")
@@ -121,7 +128,7 @@ color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB, ms2
 
 
 
-all_files
+#all_files
 
 
 
@@ -130,13 +137,13 @@ pheno_data_exo <- data.frame(sample_name = all_files_names, sample_group = samp_
 pheno_col_exo <- data.frame(color)
 
 
-pheno_data_exo
+#pheno_data_exo
 
 msd <- readMSData(files = all_files,
                   pdata = new("NAnnotatedDataFrame",pheno_data_exo),
                   mode = "onDisk",
                   centroided = TRUE)
-msd 
+#msd 
 
 # inspect data 
 table(msLevel(msd))
@@ -144,8 +151,8 @@ head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
                     "originalPeaksCount", "msLevel", 
                     "polarity", "retentionTime")])
 
-# Restrict data to 700 seconds
-msd <- filterRt(msd, c(0, 700))
+# Restrict data to 650 seconds
+msd <- filterRt(msd, c(0, 650))
 
 # ONLY FOR MS1 DATA
 # subset data for msLevel = 1 and save raw data
@@ -174,7 +181,15 @@ chromas_exo_pos <- chromatogram(msd,
                              #msLevel = 1,
                              #BPPARAM = SnowParam(workers = 3)
                              )
-chromas_exo_pos
+#chromas_exo_pos
+
+# looking for known compounds
+#rtr <- c(147, 162)
+#mzr <- c(83, 87)
+
+#chr_raw <- chromatogram(msd, mz = mzr, rt = rtr)
+#plot(chr_raw, col = pheno_col_exo)
+
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/exo_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
@@ -224,11 +239,11 @@ head(rtime(chromas_exo_pos[1, 1]))
 head(intensity(chromas_exo_pos[1, 1]))
 
 # check for polarity
-head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
-table(polarity(msd))
+#head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
+#table(polarity(msd))
 
 
-ms_params_exo_pos <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(13, 51), 
+ms_params_exo_pos <- CentWaveParam(ppm=35, mzCenterFun="wMean", peakwidth=c(13, 51), 
                                     prefilter=c(2.6, 41), mzdiff= -0.0098, snthresh=5, noise=0, 
                                     integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                     fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -251,9 +266,9 @@ ms_summary_exo_pos <- do.call(rbind, ms_summary_exo_pos)
 rownames(ms_summary_exo_pos) <- basename(fileNames(ms_data_exo_pos))
 rownames(ms_summary_exo_pos)
 
-print(ms_summary_exo_pos)
+#print(ms_summary_exo_pos)
 
-table(msLevel(ms_data_exo_pos))
+#table(msLevel(ms_data_exo_pos))
 
 
 
@@ -273,7 +288,12 @@ ms_data_exo_pos
 
 ## RT correction
 ms_data_exo_pos <- adjustRtime(ms_data_exo_pos, param=PeakGroupsParam(
-  minFraction=0.7,smooth="loess",span=0.5,family="gaussian"))
+  minFraction=0.7,smooth="loess",span=0.8,family="gaussian"))
+
+#test <- filterRt(ms_data_exo_pos, c(0, 650))
+
+#plotAdjustedRtime(test, lwd=2, main="Retention Time correction")
+
 
 # Plot the difference of raw and adjusted retention times
 #pdf(file="plots/exo_ms1_raw_adjusted.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=8, family="Helvetica")
@@ -291,14 +311,14 @@ ms_data_exo_pos <- groupChromPeaks(ms_data_exo_pos, param=PeakDensityParam(
 # Get integrated peak intensity per feature/sample
 print(head(featureValues(ms_data_exo_pos, value="into")))
 
-ppm <- 25  
+ppm <- 35  
 
 # missing value imputation, see xcmsSet
 #ms_data_exo_pos <- fillChromPeaks(ms_data_exo_pos, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
-ms_data_exo_pos
+#ms_data_exo_pos
 
-head(featureValues(ms_data_exo_pos))
-head(featureSummary(ms_data_exo_pos, group=ms_data_exo_pos$sample_group))
+#head(featureValues(ms_data_exo_pos))
+#head(featureSummary(ms_data_exo_pos, group=ms_data_exo_pos$sample_group))
 
 
 
@@ -432,14 +452,14 @@ evplot(ev_pc)
 dev.off()
 
 
-ms_intensity_cutoff <- 2000
-ppm <- 25
+ms_intensity_cutoff <- 14
+ppm <- 35
 
 # Create single 0/1 matrix
 bina_list_exo_pos <- t(ms_matrix_exo_pos)
 bina_list_exo_pos[is.na(bina_list_exo_pos)] <- 1
 bina_list_exo_pos <- log2(bina_list_exo_pos)
-bina_list_exo_pos[bina_list_exo_pos < log2(ms_intensity_cutoff)] <- 0
+bina_list_exo_pos[bina_list_exo_pos < ms_intensity_cutoff] <- 0
 bina_list_exo_pos[bina_list_exo_pos != 0] <- 1
 
 
@@ -475,8 +495,8 @@ model_div_exo_pos[is.na(model_div_exo_pos)] <- 0
 write.csv(model_div_exo_pos, file=paste(filename = "exo_pos_1ms2_Results/model_div_exo_pos.csv", sep = ""))
 
 # save the objects and tables
-save(ms_def_exo_pos, file = "exo_pos_Results/ms_def_exo_pos.RData")
-save.image(file = "exo_pos_Results/EXO_pos_1MS2_environment.RData")
+save(ms_def_exo_pos, file = "exo_pos_1ms2_Results/ms_def_exo_pos.RData")
+save.image(file = "exo_pos_1ms2_Results/EXO_pos_1MS2_environment.RData")
 
 
 end.time <- Sys.time()
@@ -485,8 +505,5 @@ time.taken <- end.time - start.time
 print(time.taken)
 
 ## export ms_data_exo_pos to MS1 script for linking and statistics
-
-
-
 
 

@@ -5,9 +5,9 @@
 
 ###---- library ----
 # Load libraries
-library(parallel)               # Detect number of cpu cores
-library(foreach)                # For multicore parallel
-library(doMC)                   # For multicore parallel
+#library(parallel)               # Detect number of cpu cores
+#library(foreach)                # For multicore parallel
+#library(doMC)                   # For multicore parallel
 library(RColorBrewer)           # For colors
 library(MSnbase)                # MS features
 library(xcms)                   # Swiss army knife for metabolomics
@@ -23,14 +23,14 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-library(chemodiv)               # Chemodiversity (Petren 2022)
-library(rcdk)                   # CDK
-library(rinchi)                 # Converting SMILES to InchiKey
+#library(chemodiv)               # Chemodiversity (Petren 2022)
+#library(rcdk)                   # CDK
+#library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
-library(shiny)                  # HTML in R
-library(sunburstR)              # HTML-sunburst plots
-library(heatmaply)              # HTML heatmaps
+#library(shiny)                  # HTML in R
+#library(sunburstR)              # HTML-sunburst plots
+#library(heatmaply)              # HTML heatmaps
 library(stringr)
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
@@ -175,8 +175,8 @@ raw_data_MS1_EXO_neg_files <- paste(input_dir_MS1, raw_data_MS1_EXO_neg, sep =""
 
 # MS1 variables
 # pol <- c(x = polarity, start =0, stop = 0)
-ppm <- 25           # needed for missing value imputation
-ms1_intensity_cutoff <- 2000	          #approx. 0.01%, needed for bina list creation
+ppm <- 35           # needed for missing value imputation
+ms1_intensity_cutoff <- 15	          #approx. 0.01%, needed for bina list creation
 
 # mzml_times_ENDO <- NULL
 
@@ -303,7 +303,7 @@ msd <- filterRt(msd, c(0, 700))
 
 # subset data for msLevel = 1 and save raw data
 # msd <- filterMsLevel(msd, msLevel = 1)
-table(polarity(msd))
+#table(polarity(msd))
 write.csv(fData(msd), file=paste(filename = "exo_neg_Results/EXO_neg_raw_data.csv", sep = ""), row.names=FALSE)
 
 # # Inspect mz values per file
@@ -315,8 +315,7 @@ write.csv(fData(msd), file=paste(filename = "exo_neg_Results/EXO_neg_raw_data.cs
 # setwd(input_dir_MS1_polarity)
 chromas_EXO_neg <- chromatogram(msd, 
                              aggregationFun="max", 
-                             #msLevel = 1, not for files
-                             )
+                             msLevel = 1)
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/EXO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
@@ -354,12 +353,12 @@ heatmap(chromas_bin_cor_EXO_neg)
 dev.off()
 
 # Assess retention times and intensities of first file
-head(rtime(chromas_EXO_neg[1, 1]))
-head(intensity(chromas_EXO_neg[1, 1]))
+#head(rtime(chromas_EXO_neg[1, 1]))
+#head(intensity(chromas_EXO_neg[1, 1]))
 
 # check for polarity
-head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
-table(polarity(msd))
+#head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
+#table(polarity(msd))
 
 
 #--- parameters calculated with IPO ---
@@ -395,7 +394,7 @@ table(polarity(msd))
 #if (condition_name == "ms1_data_EXO_neg") {
   # set parameters
   # EXO neg 
-  ms1_params_EXO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(12, 53), 
+  ms1_params_EXO_neg <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(12, 53), 
                                       prefilter=c(4, 60), mzdiff= -0.0032, snthresh=5, noise=0, 
                                       integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                       fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -447,8 +446,8 @@ table(polarity(msd))
 #ms1_data_EXO_neg <- findChromPeaks(msd, param=ms1_params_EXO_neg)
 
 # check the detected peaks
-head(chromPeaks(ms1_data_EXO_neg))
-chromPeakData(ms1_data_EXO_neg)
+#head(chromPeaks(ms1_data_EXO_neg))
+#chromPeakData(ms1_data_EXO_neg)
 
 
 # Per file summary
@@ -499,8 +498,8 @@ print(head(featureValues(ms1_data_EXO_neg, value="into")))
 
 ## Fill peaks
 #ms1_data_EXO_neg <- fillChromPeaks(ms1_data_EXO_neg, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
-head(featureValues(ms1_data_EXO_neg))
-head(featureSummary(ms1_data_EXO_neg, group=ms1_data_EXO_neg$sample_group))
+#head(featureValues(ms1_data_EXO_neg))
+#head(featureSummary(ms1_data_EXO_neg, group=ms1_data_EXO_neg$sample_group))
 
 # Evaluate grouping
 #pdf(file="plots/EXO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
@@ -544,8 +543,8 @@ dev.off()
 
 
 # Show peaks
-tail(chromPeaks(ms1_data_EXO_neg))
-tail(chromPeakData(ms1_data_EXO_neg))
+#tail(chromPeaks(ms1_data_EXO_neg))
+#tail(chromPeakData(ms1_data_EXO_neg))
 
 # Show process history
 processHistory(ms1_data_EXO_neg)
@@ -636,7 +635,7 @@ dev.off()
 bina_list_EXO_neg <- t(ms1_matrix_EXO_neg)
 bina_list_EXO_neg[is.na(bina_list_EXO_neg)] <- 1
 bina_list_EXO_neg <- log2(bina_list_EXO_neg)
-bina_list_EXO_neg[bina_list_EXO_neg < log2(ms1_intensity_cutoff)] <- 0
+bina_list_EXO_neg[bina_list_EXO_neg < ms1_intensity_cutoff] <- 0
 bina_list_EXO_neg[bina_list_EXO_neg != 0] <- 1
 
 # save as csv
@@ -682,12 +681,14 @@ time.taken <- end.time - start.time
 print(time.taken)
 
 ############# linking MS2 data #################
+start.time_linking <- Sys.time()
+
 # --------- preparations -----------
 # load object with MS1 and MS2 files preprocessed
 load(file = "exo_neg_1ms2_Results/MS_exo_neg_peak_detection.RData")
 ms_data_exo_neg <- MS_exo_neg_peak_detection
 #ms_def_endo_pos
-table(msLevel(ms_data_exo_neg))
+#table(msLevel(ms_data_exo_neg))
 
 # ---------- MS2 spectra detection ----------
 # Estimate precursor intensity
@@ -782,6 +783,12 @@ cat(mgf_text, file="ms2_spectra_EXO_neg.mgf", sep="\n")
 
 # save image with linked features
 save.image(file = "exo_neg_Results/EXO_neg_linked_1MS2_environment.RData")
+
+
+end.time_linking <- Sys.time()
+
+time.taken_linking <- end.time_linking - start.time_linking
+print(time.taken_linking)
 
 
 
