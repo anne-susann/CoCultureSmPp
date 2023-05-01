@@ -5,9 +5,9 @@
 
 ###---- library ----
 # Load libraries
-library(parallel)               # Detect number of cpu cores
-library(foreach)                # For multicore parallel
-library(doMC)                   # For multicore parallel
+#library(parallel)               # Detect number of cpu cores
+#library(foreach)                # For multicore parallel
+#library(doMC)                   # For multicore parallel
 library(RColorBrewer)           # For colors
 library(MSnbase)                # MS features
 library(xcms)                   # Swiss army knife for metabolomics
@@ -23,15 +23,17 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-library(chemodiv)               # Chemodiversity (Petren 2022)
-library(rcdk)                   # CDK
-library(rinchi)                 # Converting SMILES to InchiKey
+#library(chemodiv)               # Chemodiversity (Petren 2022)
+#library(rcdk)                   # CDK
+#library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
-library(shiny)                  # HTML in R
-library(sunburstR)              # HTML-sunburst plots
-library(heatmaply)              # HTML heatmaps
-library(stringr)
+#library(shiny)                  # HTML in R
+#library(sunburstR)              # HTML-sunburst plots
+#library(heatmaply)              # HTML heatmaps
+library(stringr)              
+library(randomForest)           # Random forest
+library(MetaboAnalystR)         # Random forest
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
@@ -175,8 +177,8 @@ start.time <- Sys.time()
 
 # MS1 variables
 # pol <- c(x = polarity, start =0, stop = 0)
-ppm <- 25           # needed for missing value imputation
-ms1_intensity_cutoff <- 2000	          #approx. 0.01%, needed for bina list creation
+ppm <- 35           # needed for missing value imputation
+ms1_intensity_cutoff <- 14	          #approx. 0.01%, needed for bina list creation
 
 # mzml_times_ENDO <- NULL
 
@@ -290,16 +292,16 @@ msd <- readMSData(files = paste(input_dir_MS1_polarity, MS1_ENDO_neg_files, sep 
                   centroided = TRUE)
 
 # inspect data 
-table(msLevel(msd))
-head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
-                    "originalPeaksCount", "msLevel", 
-                    "polarity", "retentionTime")])
+#table(msLevel(msd))
+#head(fData(msd)[, c("scanWindowLowerLimit", "scanWindowUpperLimit",
+#                    "originalPeaksCount", "msLevel", 
+#                    "polarity", "retentionTime")])
 
 # for MS2 data subset polarity again to pos = 1
 #msd <- filterPolarity(msd, polarity = 1)
 
-# Restrict data to 1020 seconds (17 minutes)
-#msd <- filterRt(msd, c(0, 1020))
+# Restrict data to 700 seconds
+msd <- filterRt(msd, c(0, 700))
 
 # subset data for msLevel = 1 and save raw data
 # msd <- filterMsLevel(msd, msLevel = 1)
@@ -315,7 +317,7 @@ write.csv(fData(msd), file=paste(filename = "endo_neg_Results/ENDO_neg_raw_data.
 # setwd(input_dir_MS1_polarity)
 chromas_ENDO_neg <- chromatogram(msd, 
                              aggregationFun="max", 
-                             #msLevel = 1, not for files
+                             msLevel = 1, 
                              )
 
 # Plot chromatograms based on phenodata groups
@@ -354,8 +356,8 @@ heatmap(chromas_bin_cor_ENDO_neg)
 dev.off()
 
 # Assess retention times and intensities of first file
-head(rtime(chromas_ENDO_neg[1, 1]))
-head(intensity(chromas_ENDO_neg[1, 1]))
+#head(rtime(chromas_ENDO_neg[1, 1]))
+#head(intensity(chromas_ENDO_neg[1, 1]))
 
 # check for polarity
 head(fData(msd)[, c("polarity", "filterString", "msLevel", "retentionTime")])
@@ -418,7 +420,7 @@ table(polarity(msd))
 #} else if (condition_name == "ms1_data_ENDO_neg") {
   # set parameters
   # ENDO neg
-  ms1_params_ENDO_neg <- CentWaveParam(ppm=15, mzCenterFun="wMean", peakwidth=c(14, 59), 
+  ms1_params_ENDO_neg <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(14, 59), 
                                        prefilter=c(3, 140), mzdiff=0.0155, snthresh=7, noise=0, 
                                        integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                        fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -448,8 +450,8 @@ table(polarity(msd))
 ms1_data_ENDO_neg <- findChromPeaks(msd, param=ms1_params_ENDO_neg)
 
 # check the detected peaks
-head(chromPeaks(ms1_data_ENDO_neg))
-chromPeakData(ms1_data_ENDO_neg)
+#head(chromPeaks(ms1_data_ENDO_neg))
+#chromPeakData(ms1_data_ENDO_neg)
 
 
 # Per file summary
@@ -500,8 +502,8 @@ print(head(featureValues(ms1_data_ENDO_neg, value="into")))
 
 ## Fill peaks
 #ms1_data_ENDO_neg <- fillChromPeaks(ms1_data_ENDO_neg, param=FillChromPeaksParam(ppm=ppm, fixedRt=0, expandRt=5))
-head(featureValues(ms1_data_ENDO_neg))
-head(featureSummary(ms1_data_ENDO_neg, group=ms1_data_ENDO_neg$sample_group))
+#head(featureValues(ms1_data_ENDO_neg))
+#head(featureSummary(ms1_data_ENDO_neg, group=ms1_data_ENDO_neg$sample_group))
 
 # Evaluate grouping
 #pdf(file="plots/ENDO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
@@ -545,11 +547,10 @@ dev.off()
 
 
 # Show peaks
-tail(chromPeaks(ms1_data_ENDO_neg))
-tail(chromPeakData(ms1_data_ENDO_neg))
+#tail(chromPeaks(ms1_data_ENDO_neg))
+#tail(chromPeakData(ms1_data_ENDO_neg))
 
 # Show process history
-processHistory(ms1_data_ENDO_neg)
 processHistory(ms1_data_ENDO_neg)
 
 # save as R object for later use
@@ -668,13 +669,13 @@ evplot(ev_pc)
 dev.off()
 
 
-ms1_intensity_cutoff <- 2000
+ms1_intensity_cutoff <- 14
 
 # Create single 0/1 matrix
 bina_list_ENDO_neg <- t(ms1_matrix_ENDO_neg)
 bina_list_ENDO_neg[is.na(bina_list_ENDO_neg)] <- 1
 bina_list_ENDO_neg <- log2(bina_list_ENDO_neg)
-bina_list_ENDO_neg[bina_list_ENDO_neg < log2(ms1_intensity_cutoff)] <- 0
+bina_list_ENDO_neg[bina_list_ENDO_neg < ms1_intensity_cutoff] <- 0
 bina_list_ENDO_neg[bina_list_ENDO_neg != 0] <- 1
 
 # save as csv
@@ -711,7 +712,8 @@ write.csv(model_div_ENDO_neg, file=paste(filename = "endo_neg_Results/model_div_
 
 # save the objects and tables
 save.image(file = "endo_neg_Results/ENDO_neg_MS1_environment.RData")
-#load("endo_neg_Results/ENDO_neg_MS1_environment.RData")
+save(ms1_def_ENDO_neg, file = "exo_pos_Results/ms1_def_ENDO_neg.RData")
+
 
 end.time <- Sys.time()
 
@@ -721,15 +723,17 @@ print(time.taken)
 
 
 ############# linking MS2 data #################
+start.time_linking <- Sys.time()
+
 # --------- preparations -----------
 # load object with MS1 and MS2 files preprocessed
 load(file = "endo_neg_1ms2_Results/MS_endo_neg_peak_detection.RData")
 ms_data_ENDO_neg <- MS_endo_neg_peak_detection
 #ms_def_endo_pos
-table(msLevel(ms_data_ENDO_neg))
-table(msLevel(ms1_data_ENDO_neg))
+#table(msLevel(ms_data_ENDO_neg))
+#table(msLevel(ms1_data_ENDO_neg))
 
-head(ms1_def_ENDO_neg)
+#head(ms1_def_ENDO_neg)
 
 
 # ---------- MS2 spectra detection ----------
@@ -793,7 +797,7 @@ polarity="negative"
 pol="neg"
 
 # create a list with file names of feature origin
-ms2_names <- NULL
+#ms2_names <- NULL
 
 
 # extract collision energy
@@ -825,11 +829,9 @@ for (i in names(ms2_spectra_ENDO_neg)) {
 # Write MGF file
 cat(mgf_text, file="endo_neg_1ms2_Results/ms2_spectra_ENDO_neg.mgf", sep="\n")
 
+end.time_linking <- Sys.time()
 
-
-
-#####copied from coculture.R file######
-
-
+time.taken_linking <- end.time_linking - start.time_linking
+print(time.taken_linking)
 
 
