@@ -23,14 +23,14 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-#library(chemodiv)               # Chemodiversity (Petren 2022)
+library(chemodiv)               # Chemodiversity (Petren 2022)
 #library(rcdk)                   # CDK
 #library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
 #library(shiny)                  # HTML in R
 #library(sunburstR)              # HTML-sunburst plots
-#library(heatmaply)              # HTML heatmaps
+library(heatmaply)              # HTML heatmaps
 library(stringr)              
 library(randomForest)           # Random forest
 library(MetaboAnalystR)         # Random forest
@@ -175,10 +175,6 @@ raw_data_MS1_EXO_pos_files <- paste(input_dir_MS1, raw_data_MS1_EXO_pos, sep =""
 ###----MS1 preparations----
 start.time <- Sys.time()
 
-# MS1 variables
-#ms1_intensity_cutoff <- 14	          #approx. 0.01%, needed for bina list creation
-
-# mzml_times_ENDO <- NULL
 
 ###----Creation of Phenodata/Metadata----
 # create vector with sample classes according to culture information sheet
@@ -320,7 +316,7 @@ chromas_EXO_pos <- chromatogram(msd,
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/EXO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_chromas_pos.jpeg", width = 2000, height = 1200, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_chromas_pos.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 plot(chromas_EXO_pos, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
 legend("topleft", bty="n", pt.cex=3, cex=1.5, y.intersp=0.7, text.width=0.5, pch=20, 
@@ -329,7 +325,7 @@ dev.off()
 
 # Get TICs
 #pdf(file="plots/EXO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_tics_pos.jpeg", width = 2000, height = 1200, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_tics_pos.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 tics_EXO_pos <- split(tic(msd), f=fromFile(msd))
 boxplot(tics_EXO_pos, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
@@ -348,7 +344,7 @@ chromas_bin_cor_EXO_pos[is.na(chromas_bin_cor_EXO_pos)] <- 0
 # representing the data in a heatmap for general overview
 #pdf(file="plots/heatmap_chromas_bin_EXO.pdf", encoding="ISOLatin1", pointsize=10, width=6, 
 #    height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/heatmap_chromas_bin_EXO_pos.jpeg", width = 500, height = 500, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/heatmap_chromas_bin_EXO_pos.jpeg", width = 500, height = 500, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(7,0,0,7), cex.axis=0.9, cex=0.6)
 heatmap(chromas_bin_cor_EXO_pos)
 dev.off()
@@ -466,7 +462,7 @@ write.csv(as.data.frame(table(msLevel(ms1_data_EXO_pos))), file="exo_pos_Results
 # To get a global overview of the peak detection we can plot the frequency of identified peaks per file along the retention time axis. 
 # This allows to identify time periods along the MS run in which a higher number of peaks was identified and evaluate whether this is consistent across files.
 #pdf(file="plots/EXO_ms1_data.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_ms1_data.jpeg", width = 2000, height = 1200, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_ms1_data.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,18,4,1), oma=c(0,0,0,0), cex.axis=1, cex=2, cex.lab=2, cex.main=2)
 plotChromPeakImage(ms1_data_EXO_pos, main="Frequency of identified peaks per RT", binSize = 20)
 dev.off()
@@ -504,7 +500,7 @@ print(head(featureValues(ms1_data_EXO_pos, value="into")))
 
 # Evaluate grouping
 #pdf(file="plots/EXO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_ms1_grouping.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_ms1_grouping.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
 ms1_pca_EXO_pos <- prcomp(t(na.omit(log2(featureValues(ms1_data_EXO_pos, value="into")))), center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms1_pca_EXO_pos$x[, 1], ms1_pca_EXO_pos$x[,2], pch=19, main="PCA: Grouping of samples",
@@ -585,13 +581,13 @@ write.csv(feat_list_EXO_pos, file=paste(filename = "exo_pos_Results/feature_list
 
 # Plot histogram
 #pdf(file="EXO_pos_plots/EXO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_feat_list_hist.jpeg", width = 1000, height = 1000, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_feat_list_hist.jpeg", width = 1000, height = 1000, quality = 100, bg = "white")
 hist(as.numeric(feat_list_EXO_pos), main="Histogram of feature table")
 dev.off()
 
 # PCA of feature table results
 #pdf(file="plots/EXO_ms1_feature_table_pca.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_pos_plots/EXO_pos_ms1_feature_table_pca_exc_MB.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+jpeg(filename = "exo_pos_plots/EXO_pos_ms1_feature_table_pca_exc_MB.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
 ms1_pca_EXO_pos <- prcomp(feat_list_EXO_pos[1:24,], center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms1_pca_EXO_pos$x[, 1], ms1_pca_EXO_pos$x[,2], pch=19, main="PCA of feature table",
@@ -629,6 +625,8 @@ ev_pc = ms1_pca_EXO_pos$sdev^2
 evplot(ev_pc)  
 dev.off()
 
+# MS1 variables
+ms1_intensity_cutoff <- 14	    # cutoff lower end of gauss curve for binary list creation      
 ppm <- 35
 
 # Create single 0/1 matrix
@@ -698,7 +696,7 @@ ms_data_exo_pos <- filterRt(ms_data_exo_pos, c(0, 650))
 #print(head(na.omit(precursor_intensity_EXO_pos)))
 
 # Reconstruct MS2 spectra from MS1 data
-ms2_data_EXO_pos <- chromPeakSpectra(ms_data_exo_pos, msLevel=2L, expandRt = 4, return.type="Spectra")
+ms2_data_EXO_pos <- chromPeakSpectra(ms_data_exo_pos, msLevel=2L, expandRt = 6, ppm = 5, expandMz = 0.0001, return.type="Spectra")
 print(ms2_data_EXO_pos)
 print(length(ms2_data_EXO_pos$peak_id))
 
@@ -764,7 +762,7 @@ mgf_text <- NULL
 for (i in names(ms2_spectra_EXO_pos)) {
   mgf_text <- c(mgf_text, paste0("COM=", i))
   mgf_text <- c(mgf_text, "BEGIN IONS")
-  mgf_text <- c(mgf_text, "MSLEVEL=2")
+  mgf_text <- c(mgf_text, "msLevel=2")
   mgf_text <- c(mgf_text, paste0("TITLE=", i))
   mgf_text <- c(mgf_text, paste0("RTINSECONDS=", ms1_def_EXO_pos[i, "rtmed"]))
   mgf_text <- c(mgf_text, paste0("PEPMASS=", ms1_def_EXO_pos[i, "mzmed"]))
@@ -773,14 +771,14 @@ for (i in names(ms2_spectra_EXO_pos)) {
   } else {
     mgf_text <- c(mgf_text, paste0("CHARGE=", "0"))
   }
-  mgf_text <- c(mgf_text, paste0("COLENERGY=", unique(colenergy)))
+  mgf_text <- c(mgf_text, paste0("collisionEnergy=", unique(colenergy)))
   mgf_text <- c(mgf_text, paste(as.data.frame(peaksData(ms2_spectra_EXO_pos[[i]])[[1]])$mz, as.data.frame(peaksData(ms2_spectra_EXO_pos[[i]])[[1]])$intensity, sep=" "))
   mgf_text <- c(mgf_text, "END IONS")
   mgf_text <- c(mgf_text, "")
 }
 
 # Write MGF file
-cat(mgf_text, file="exo_pos_Results/ms2_spectra_EXO_pos_35ppm_0_8span.mgf", sep="\n")
+cat(mgf_text, file="exo_pos_Results/ms2_spectra_EXO_pos_chromPeakSpectra_test.mgf", sep="\n")
 
 end.time_linking <- Sys.time()
 
@@ -906,6 +904,23 @@ print(time.taken_linking)
 
 
 # ############################## MS1 statistics (ALL FEATURES) ##############################
+
+## Combined statistics for positive and negative mode
+# combine feature tables of pos and neg
+#feature_table_pos <- feat_list_EXO_pos[-25,]
+#rownames(feature_table_pos) <- paste(pheno_data_EXO[1:24,1], pheno_data_EXO[1:24,2], "pos", sep = "_" )
+
+
+#feature_table_neg <- data.frame(read.csv("exo_neg/exo_neg_Results/feature_list_EXO_neg.csv"))
+#feature_table_neg <- feature_table_neg[-25,-1]
+#rownames(feature_table_neg) <- paste(pheno_data_EXO[1:24,1], pheno_data_EXO[1:24,2], "neg", sep = "_" )
+#colnames(feature_table_neg) <- paste(colnames(feature_table_neg), "neg", sep = "_")
+
+#feat_list_EXO <- cbind(feature_table_pos, feature_table_neg)
+#rownames(feat_list_EXO) <- paste(pheno_data_EXO[1:24,1], pheno_data_EXO[1:24,2], sep = "_" )
+
+
+
 # define variables by which to analyse
 mzml_pheno_samples <- samp_groups_description[1:24]
 mzml_pheno_colors <- color[1:24]
@@ -921,8 +936,6 @@ mzml_pheno_origin_species_pos <- as.factor(species_samp_groups <- c("P. parvum",
                                                                    "S. marinoi", "P. parvum"))
 # overview dataframe
 mzml_pheno <- data.frame(mzml_pheno_samples_type, mzml_pheno_origin_samples_pos, mzml_pheno_origin_species_pos)
-
-principal_components <- 5
 
 # remove MB from lists for analysis
 feat_list_nMB <- feat_list_EXO_pos[-(25),]
@@ -972,6 +985,9 @@ text(1:length(levels(mzml_pheno_origin_species_pos)), par("usr")[4]+(par("usr")[
 dev.off()
 
 # ---------- PLS ----------
+# for PLS analysis
+principal_components <- 5
+
 # PLS according to Culture type
 sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, sel_factor=mzml_pheno_origin_samples_pos, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="exo_pos_plots/ms1_comp_list_select_pls_roc_species.pdf")
 print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
@@ -994,33 +1010,32 @@ save(sel_pls_comp_list, file = "exo_pos_Results/sel_pls_comp_list_species.RData"
 # 
 # # --------- ANOVA ----------
 # model_anova <- aov(comp_list, ~ mzml_pheno_origin_samples_pos, ~ mzml_pheno_origin_species_pos, data = comp_list )
-
 # -------- Random forest -----
-# Load the data
-comp_list
-
-# Split the data into training and testing sets
-set.seed(123) # for reproducibility
-train_idx <- sample(1:nrow(comp_list), nrow(comp_list) * 0.8)
-train <- comp_list[train_idx, ]
-test <- comp_list[-train_idx, ]
-
-# Fit a random forest model
-rf_model <- randomForest(Class ~ ., data = train, ntree = 500, importance = TRUE)
-
-# Evaluate the model on the test set
-rf_pred <- predict(rf_model, test, type = "class")
-conf_mat <- table(test$Class, rf_pred)
-accuracy <- sum(diag(conf_mat)) / sum(conf_mat)
-
-# Assess feature importance
-var_imp <- rf_model$importance
-
-# Plot variable importance
-var_imp_rank <- sort(var_imp, decreasing = TRUE)
-jpeg(filename = "exo_pos_plots/EXO_pos_ms1_random_forest.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
-barplot(var_imp_rank, las = 2, cex.names = 0.7, main = "Random Forest Variable Importance")
-dev.off()
+# # Load the data
+# comp_list
+# 
+# # Split the data into training and testing sets
+# set.seed(123) # for reproducibility
+# train_idx <- sample(1:nrow(comp_list), nrow(comp_list) * 0.8)
+# train <- comp_list[train_idx, ]
+# test <- comp_list[-train_idx, ]
+# 
+# # Fit a random forest model
+# rf_model <- randomForest(Class ~ ., data = train, ntree = 500, importance = TRUE)
+# 
+# # Evaluate the model on the test set
+# rf_pred <- predict(rf_model, test, type = "class")
+# conf_mat <- table(test$Class, rf_pred)
+# accuracy <- sum(diag(conf_mat)) / sum(conf_mat)
+# 
+# # Assess feature importance
+# var_imp <- rf_model$importance
+# 
+# # Plot variable importance
+# var_imp_rank <- sort(var_imp, decreasing = TRUE)
+# jpeg(filename = "exo_pos_plots/EXO_pos_ms1_random_forest.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+# barplot(var_imp_rank, las = 2, cex.names = 0.7, main = "Random Forest Variable Importance")
+# dev.off()
 
 # ############################## MS2 statistics examples ##############################
 # 

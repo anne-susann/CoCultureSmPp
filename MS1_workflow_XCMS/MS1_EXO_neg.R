@@ -23,14 +23,14 @@ library(caret)                  # Swiss-army knife for statistics
 library(pROC)                   # Evaluation metrics
 library(PRROC)                  # Evaluation metrics
 library(multiROC)               # Evaluation metrics
-#library(chemodiv)               # Chemodiversity (Petren 2022)
+library(chemodiv)               # Chemodiversity (Petren 2022)
 #library(rcdk)                   # CDK
 #library(rinchi)                 # Converting SMILES to InchiKey
 library(plotly)                 # For creating html plots
 library(htmlwidgets)            # For creating html plots
 #library(shiny)                  # HTML in R
 #library(sunburstR)              # HTML-sunburst plots
-#library(heatmaply)              # HTML heatmaps
+library(heatmaply)              # HTML heatmaps
 library(stringr)
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
@@ -319,7 +319,7 @@ chromas_EXO_neg <- chromatogram(msd,
 
 # Plot chromatograms based on phenodata groups
 #pdf(file="plots/EXO_chromas.pdf", encoding="ISOLatin1", pointsize=2, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_neg_plots/EXO_chromas_pos.jpeg", width = 2000, height = 1200, quality = 150, bg = "white")
+jpeg(filename = "exo_neg_plots/EXO_chromas_pos.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 plot(chromas_EXO_neg, main="Raw chromatograms", xlab="retention time [s]", ylab="intensity", col = color)
 legend("topleft", bty="n", pt.cex=3, cex=1.5, y.intersp=0.7, text.width=0.5, pch=20, 
@@ -328,7 +328,7 @@ dev.off()
 
 # Get TICs
 #pdf(file="plots/EXO_tics.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_neg_plots/EXO_tics_pos.jpeg", width = 2000, height = 1200, quality = 150, bg = "white")
+jpeg(filename = "exo_neg_plots/EXO_tics_pos.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,5,4,1), oma=c(0,0,0,0), cex.axis=1.5, cex=2, cex.lab=2, cex.main=2)
 tics_EXO_neg <- split(tic(msd), f=fromFile(msd))
 boxplot(tics_EXO_neg, col=color, ylab="intensity", xlab="sample", main="Total ion current", outline = FALSE)
@@ -347,7 +347,7 @@ chromas_bin_cor_EXO_neg[is.na(chromas_bin_cor_EXO_neg)] <- 0
 # representing the data in a heatmap for general overview
 #pdf(file="plots/heatmap_chromas_bin_EXO.pdf", encoding="ISOLatin1", pointsize=10, width=6, 
 #    height=4, family="Helvetica")
-jpeg(filename = "exo_neg_plots/heatmap_chromas_bin_EXO_neg.jpeg", width = 500, height = 500, quality = 150, bg = "white")
+jpeg(filename = "exo_neg_plots/heatmap_chromas_bin_EXO_neg.jpeg", width = 500, height = 500, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(4,4,4,1), oma=c(7,0,0,7), cex.axis=0.9, cex=0.6)
 heatmap(chromas_bin_cor_EXO_neg)
 dev.off()
@@ -465,7 +465,7 @@ write.csv(as.data.frame(table(msLevel(ms1_data_EXO_neg))), file="exo_neg_Results
 # To get a global overview of the peak detection we can plot the frequency of identified peaks per file along the retention time axis. 
 # This allows to identify time periods along the MS run in which a higher number of peaks was identified and evaluate whether this is consistent across files.
 #pdf(file="plots/EXO_ms1_data.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_neg_plots/EXO_neg_ms1_data.jpeg", width = 2000, height = 1200, quality = 150, bg = "white")
+jpeg(filename = "exo_neg_plots/EXO_neg_ms1_data.jpeg", width = 2000, height = 1200, quality = 100, bg = "white")
 par(mfrow=c(1,1), mar=c(5,18,4,1), oma=c(0,0,0,0), cex.axis=1, cex=2, cex.lab=2, cex.main=2)
 plotChromPeakImage(ms1_data_EXO_neg, main="Frequency of identified peaks per RT", binSize = 20)
 dev.off()
@@ -503,7 +503,7 @@ print(head(featureValues(ms1_data_EXO_neg, value="into")))
 
 # Evaluate grouping
 #pdf(file="plots/EXO_ms1_grouping.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_neg_plots/EXO_neg_ms1_grouping.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+jpeg(filename = "exo_neg_plots/EXO_neg_ms1_grouping.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
 ms1_pca_EXO_neg <- prcomp(t(na.omit(log2(featureValues(ms1_data_EXO_neg, value="into")))), center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms1_pca_EXO_neg$x[, 1], ms1_pca_EXO_neg$x[,2], pch=19, main="PCA: Grouping of samples",
@@ -587,13 +587,13 @@ write.csv(feat_list_EXO_neg, file=paste(filename = "exo_neg_Results/feature_list
 
 # Plot histogram
 #pdf(file="EXO_neg_plots/EXO_feat_list_hist.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_neg_plots/EXO_neg_feat_list_hist.jpeg", width = 1000, height = 1000, quality = 150, bg = "white")
+jpeg(filename = "exo_neg_plots/EXO_neg_feat_list_hist.jpeg", width = 1000, height = 1000, quality = 100, bg = "white")
 hist(as.numeric(feat_list_EXO_neg), main="Histogram of feature table")
 dev.off()
 
 # PCA of feature table results
 #pdf(file="plots/EXO_ms1_feature_table_pca.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-jpeg(filename = "exo_neg_plots/EXO_neg_ms1_feature_table_pca_exc_MB.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+jpeg(filename = "exo_neg_plots/EXO_neg_ms1_feature_table_pca_exc_MB.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
 ms1_pca_EXO_neg <- prcomp(feat_list_EXO_neg[1:24,], center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms1_pca_EXO_neg$x[, 1], ms1_pca_EXO_neg$x[,2], pch=19, main="PCA of feature table",
@@ -682,6 +682,11 @@ print(time.taken)
 
 ############# linking MS2 data #################
 start.time_linking <- Sys.time()
+
+# if you start from here, uncomment this next line to load in the environment from before
+#load("exo_neg_Results/EXO_neg_MS1_environment.RData")
+
+
 
 # --------- preparations -----------
 # load object with MS1 and MS2 files preprocessed
