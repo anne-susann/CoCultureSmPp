@@ -18,12 +18,12 @@ Analysis of the MS1 and MS2 data of Co-Culture experiment with _S. marinoi_ and 
 	- PCA
 	- Diversity measures (Shannon diversity index, ...)
 	- PLS 
-	~~- t-SNE~~
+	-~~t-SNE~~
 	- Variation partitioning
-	~~- ANOVA~~
+	-~~ANOVA~~
 	- Random forest 
 
-5. ~~ The information from the annotation can be integrated with the statistical analysis, giving annotation to the siginifcant features determined in the statistics ~~
+5. ~~The information from the annotation can be integrated with the statistical analysis, giving annotation to the siginifcant features determined in the statistics~~
 
 
 
