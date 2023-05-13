@@ -12,9 +12,18 @@ Analysis of the MS1 and MS2 data of Co-Culture experiment with _S. marinoi_ and 
 
 2. Run the pre-processing on **MS1 AND MS2 data COMBINED** with the same parameters using the scripts in the _/MS1and2_workflow_XCMS/_ directory. The necessary objects are saved as .RData.
 
-3. For the linking of MS1 and MS2 data, return to the script in _/MS1_workflow_XCMS/_ and follow from ### linking MS2 data ### on, loading the combined object created in the other directory *ms_data_xxx_pol*. The script establishes a connection between the precursor masses and the origin files using the feature definitions stored in *ms1_def_XXX_pol*, giving the siginificant MS2 spectra as a .mgf file to be used with MAW for feature annotation.
+3. For the linking of MS1 and MS2 data, return to the script in _/MS1_workflow_XCMS/_ and follow from ### linking MS2 data ### on, loading the combined object created in the other directory *ms_data_xxx_pol*. The script establishes a connection between the precursor masses and the origin files using the feature definitions stored in *ms1_def_XXX_pol*, giving the MS2 spectra as a .mgf file to be used with MAW for feature annotation.
 
-4. _For EXO pos_ Following the script, MS1 statistics is performed with diverisity measures, OPLS, varpart, random forest. 
+4. For in-depth statistical analysis, the _/Statistics/_ directory contains RScripts for several statistical methods. The objects used are the previously produced .csv tables of feat_list and bina_list. The negative and positive feature tables are combined and analysis is performed within the conditions (EXO and ENDO) combined and on species level. Statistical methods used include:
+	- PCA
+	- Diversity measures (Shannon diversity index, ...)
+	- PLS 
+	~~- t-SNE~~
+	- Variation partitioning
+	~~- ANOVA~~
+	- Random forest 
+
+5. ~~ The information from the annotation can be integrated with the statistical analysis, giving annotation to the siginifcant features determined in the statistics ~~
 
 
 
