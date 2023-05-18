@@ -718,6 +718,22 @@ end.time <- Sys.time()
 time.taken <- end.time - start.time
 print(time.taken)
 
+# ----- create feature info table -----------
+# extract feature names, mz and rt 
+feature_info_ENDO_pos <- data.frame(cbind(ms1_data_ENDO_pos@msFeatureData[["featureDefinitions"]]@rownames, 
+                                          ms1_data_ENDO_pos@msFeatureData[["featureDefinitions"]]@listData[["mzmed"]], 
+                                          ms1_data_ENDO_pos@msFeatureData[["featureDefinitions"]]@listData[["mzmin"]], 
+                                          ms1_data_ENDO_pos@msFeatureData[["featureDefinitions"]]@listData[["mzmax"]], 
+                                          ms1_data_ENDO_pos@msFeatureData[["featureDefinitions"]]@listData[["rtmed"]], 
+                                          ms1_data_ENDO_pos@msFeatureData[["featureDefinitions"]]@listData[["rtmin"]], 
+                                          ms1_data_ENDO_pos@msFeatureData[["featureDefinitions"]]@listData[["rtmax"]]))
+# add column names
+colnames(feature_info_ENDO_pos) <- c("feat_id", "mzmed", "mzmin", "mzmax", "rtmed", "rtmin", "rtmax")
+
+# save as csv
+write.csv(feature_info_ENDO_pos, file = "endo_pos/endo_pos_Results/feature_info_ENDO_pos.csv", row.names = FALSE)
+
+
 
 ############# linking MS2 data #################
 start.time_linking <- Sys.time()

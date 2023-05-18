@@ -680,6 +680,23 @@ end.time <- Sys.time()
 time.taken <- end.time - start.time
 print(time.taken)
 
+# ----- create feature info table -----------
+# extract feature names, mz and rt 
+feature_info_EXO_neg <- data.frame(cbind(ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@rownames, 
+                                          ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["mzmed"]], 
+                                          ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["mzmin"]], 
+                                          ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["mzmax"]], 
+                                          ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["rtmed"]], 
+                                          ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["rtmin"]], 
+                                          ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["rtmax"]]))
+# add column names
+colnames(feature_info_EXO_neg) <- c("feat_id", "mzmed", "mzmin", "mzmax", "rtmed", "rtmin", "rtmax")
+
+# save as csv
+write.csv(feature_info_EXO_neg, file = "exo_neg/exo_neg_Results/feature_info_EXO_neg.csv", row.names = FALSE)
+
+
+
 ############# linking MS2 data #################
 start.time_linking <- Sys.time()
 

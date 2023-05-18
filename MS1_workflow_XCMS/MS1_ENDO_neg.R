@@ -712,7 +712,7 @@ write.csv(model_div_ENDO_neg, file=paste(filename = "endo_neg_Results/model_div_
 
 # save the objects and tables
 save.image(file = "endo_neg_Results/ENDO_neg_MS1_environment.RData")
-save(ms1_def_ENDO_neg, file = "exo_pos_Results/ms1_def_ENDO_neg.RData")
+save(ms1_def_ENDO_neg, file = "endo_neg_Results/ms1_def_ENDO_neg.RData")
 
 
 end.time <- Sys.time()
@@ -720,6 +720,20 @@ end.time <- Sys.time()
 time.taken <- end.time - start.time
 print(time.taken)
 
+# ----- create feature info table -----------
+# extract feature names, mz and rt 
+feature_info_ENDO_neg <- data.frame(cbind(ms1_data_ENDO_neg@msFeatureData[["featureDefinitions"]]@rownames, 
+                                          ms1_data_ENDO_neg@msFeatureData[["featureDefinitions"]]@listData[["mzmed"]], 
+                                          ms1_data_ENDO_neg@msFeatureData[["featureDefinitions"]]@listData[["mzmin"]], 
+                                          ms1_data_ENDO_neg@msFeatureData[["featureDefinitions"]]@listData[["mzmax"]], 
+                                          ms1_data_ENDO_neg@msFeatureData[["featureDefinitions"]]@listData[["rtmed"]], 
+                                          ms1_data_ENDO_neg@msFeatureData[["featureDefinitions"]]@listData[["rtmin"]], 
+                                          ms1_data_ENDO_neg@msFeatureData[["featureDefinitions"]]@listData[["rtmax"]]))
+# add column names
+colnames(feature_info_ENDO_neg) <- c("feat_id", "mzmed", "mzmin", "mzmax", "rtmed", "rtmin", "rtmax")
+
+# save as csv
+write.csv(feature_info_ENDO_neg, file = "endo_neg/endo_neg_Results/feature_info_ENDO_neg.csv", row.names = FALSE)
 
 
 ############# linking MS2 data #################
