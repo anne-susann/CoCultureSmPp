@@ -43,11 +43,35 @@ source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.
 feat_list_ENDO <- read.csv("ENDO_stats_Results/feat_list_ENDO.csv", row.names = 1)
 feat_list_EXO <- read.csv("exo_stats_Results/feat_list_EXO.csv", row.names = 1)
 
+# import binary tables
+bina_list_ENDO <- read.csv("ENDO_stats_Results/bina_list_ENDO.csv", row.names = 1)
+bina_list_EXO <- read.csv("exo_stats_Results/bina_list_EXO.csv", row.names = 1)
+
+
+# name the features per polarity
+colnames(feat_list_ENDO) <- paste(colnames(feat_list_ENDO), "endo", sep = "_")
+colnames(feat_list_EXO) <- paste(colnames(feat_list_EXO), "exo", sep = "_")
+
+# name the features per polarity
+colnames(bina_list_ENDO) <- paste(colnames(bina_list_ENDO), "endo", sep = "_")
+colnames(bina_list_EXO) <- paste(colnames(bina_list_EXO), "exo", sep = "_")
+
 # combine the feature tables  into one
-feat_list_COMBINED <- cbind(feat_list_EXO, feat_list_ENDO)
+feat_list_COMBINED <- cbind(feat_list_ENDO, feat_list_EXO)
+
+# combine the feature tables  into one
+bina_list_COMBINED <- cbind(bina_list_ENDO, bina_list_EXO)
+
 
 # remove MB
-feat_list_COMBINED <- feat_list_COMBINED[,1:24]
+#feat_list_COMBINED <- feat_list_COMBINED[,1:24]
+
+# rename the rows
+rownames(feat_list_COMBINED) <- gsub("ENDO", "COMBINED", rownames(feat_list_COMBINED))
+
+# rename the rows
+rownames(bina_list_COMBINED) <- gsub("ENDO", "COMBINED", rownames(bina_list_COMBINED))
+
 
 ###----Creation of Phenodata/Metadata----
 # create vector with sample classes according to culture information sheet
@@ -81,18 +105,12 @@ MB <- rep("#040404", 1)
 
 color <- c(CoCuPp1, CoCuSm1, CoCuPp2, CoCuSm2, Sm, Pp, CoCuSm3, CoCuPp3, MB)
 
-MS1_names <- rownames(feat_list_COMBINED)
+MS1_COMBINED_names <- rownames(feat_list_COMBINED)
 
 
 # create phenodata based on culture type
-pheno_data <- data.frame(sample_name = MS1_COMBINED_names, sample_group = samp_groups, samp_groups_description = samp_groups_description)
+pheno_data <- data.frame(sample_name = MS1_COMBINED_names, sample_group = samp_groups[1:24], samp_groups_description = samp_groups_description[1:24])
 pheno_color <- data.frame(color)
-
-# set rownames of feature table
-for (i in 1:24) {
-  rownames(feat_list_COMBINED)[i] <- gsub("coculture_pos", pheno_data$sample_group[i], rownames(feat_list_COMBINED)[i])
-}
-
 
 
 ###---- divide into species level ----
@@ -103,6 +121,10 @@ index_PP <- grep("Pp", pheno_data$sample_group)
 # divide the feature table by species type
 feat_list_COMBINED_Sm <- feat_list_COMBINED[index_SM,]
 feat_list_COMBINED_Pp <- feat_list_COMBINED[index_PP,]
+
+# divide the feature table by species type
+bina_list_COMBINED_Sm <- bina_list_COMBINED[index_SM,]
+bina_list_COMBINED_Pp <- bina_list_COMBINED[index_PP,]
 
 
 
@@ -146,6 +168,17 @@ mzml_pheno_legend <-  c("Co-culture P.p", "Co-culture S.m", "Co-culture S.m", "C
 # overview dataframe
 mzml_pheno <- data.frame(mzml_pheno_samples_type, mzml_pheno_origin_samples, mzml_pheno_origin_species, mzml_pheno_legend)
 
+
+# comp list
+comp_list <- feat_list_COMBINED
+comp_list_Sm <- feat_list_COMBINED_Sm
+comp_list_Pp <- feat_list_COMBINED_Pp
+
+# bina list
+bina_list <- bina_list_COMBINED
+bina_list_Sm <- bina_list_COMBINED_Sm
+bina_list_Pp <- bina_list_COMBINED_Pp
+
 # ############################## MS1 statistics (ALL FEATURES) ##############################
 
 
@@ -167,8 +200,8 @@ model_div$fisher      <- apply(X=comp_list , MARGIN=1, FUN=function(x) { fisher.
 
 # test for functional hill
 # subset comp_list for the first 20 features
-comp_list_hillfunc <- comp_list[,1:1000]
-model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list_hillfunc, compDisMat=scales::rescale(as.matrix(dist(t(comp_list_hillfunc)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
+#comp_list_hillfunc <- comp_list[,1:1000]
+#model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list_hillfunc, compDisMat=scales::rescale(as.matrix(dist(t(comp_list_hillfunc)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
 
 # save as model_div as csv
 write.csv(model_div, file=paste(filename = "COMBINED_stats_Results/model_div_COMBINED.csv", sep = ""))
@@ -177,11 +210,13 @@ write.csv(model_div, file=paste(filename = "COMBINED_stats_Results/model_div_COM
 col_shan <- c(unique(CoCuPp1), unique(CoCuSm1), unique(CoCuPp1), unique(CoCuSm1))
 
 # Plot Shannon index
-pdf(paste("COMBINED_stats_plots/ms1_comp_list_diversity_shannon_Culture.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=5, height=5, family="Helvetica")
+pdf(paste("COMBINED_stats_plots/ms1_comp_list_diversity_shannon_Culture_1.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=10, height=10, family="Helvetica")
 boxplot(model_div$shannon ~ mzml_pheno_samples_type, col=col_shan, main="Shannon diversity (H\')", xlab="culture types", ylab="Shannon diversity index (H\')")
 text(1:length(levels(mzml_pheno_samples_type)), par("usr")[3]-(par("usr")[4]-par("usr")[3])/14, srt=-22.5, adj=0.5, labels=levels(mzml_pheno_samples_type), xpd=TRUE, cex=0.9)
 div_tukey <- tukey.test(response=model_div$shannon, term=as.factor(mzml_pheno_samples_type))
-text(1:length(levels(mzml_pheno_samples_type)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
+#text(1:length(levels(mzml_pheno_samples_type)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
+legend("bottomleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(col_shan), legend= c("P.parvum", "S.marinoi"))
 dev.off()
 
 # ---------- PLS ----------

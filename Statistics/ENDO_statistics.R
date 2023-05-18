@@ -11,7 +11,7 @@ library(MSnbase)                # MS features
 library(xcms)                   # Swiss army knife for metabolomics
 library(CAMERA)                 # Metabolite Profile Annotation
 library(Spectra)                # Spectra package needed for XCMS3
-library(vegan)
+library(vegan)                  # For Statistics/Varpart
 library(multcomp)               # For Tukey test
 library(Hmisc)                  # For correlation test
 library(gplots)                 # For fancy heatmaps
@@ -101,6 +101,17 @@ MS1_ENDO_names <- rownames(feat_list_ENDO)
 pheno_data_ENDO <- data.frame(sample_name = MS1_ENDO_names, sample_group = samp_groups, samp_groups_description = samp_groups_description)
 pheno_color_ENDO <- data.frame(color)
 
+# set rownames of feature table
+for (i in 1:24) {
+  rownames(feat_list_ENDO)[i] <- gsub("coculture_pos", pheno_data_ENDO$sample_group[i], rownames(feat_list_ENDO)[i])
+}
+
+# set rownames of bina list
+for (i in 1:24) {
+  rownames(bina_list_ENDO)[i] <- gsub("coculture_pos", pheno_data_ENDO$sample_group[i], rownames(bina_list_ENDO)[i])
+}
+
+
 ###----Preparations----
 # create plot directory
 if (dir.exists(paste(getwd(), "/ENDO_stats_plots/", sep = ""))){
@@ -118,6 +129,8 @@ if (dir.exists(paste(getwd(), "/ENDO_stats_Results/", sep = ""))){
   print("Results folder has been created")
 }
 
+
+
 # define variables by which to analyse
 mzml_pheno_samples <- samp_groups_description[1:24]
 mzml_pheno_colors <- color[1:24]
@@ -131,8 +144,14 @@ mzml_pheno_origin_samples <- as.factor(origin_samp_groups <- c("CoCu", "CoCu", "
 mzml_pheno_origin_species <- as.factor(species_samp_groups <- c("P. parvum", "S. marinoi", "S. marinoi", "P. parvum", "P. parvum", "S. marinoi",
                                                                     rep(x = "S. marinoi", times = 8), rep(x = "P. parvum", times = 8),
                                                                     "S. marinoi", "P. parvum"))
+# For plot legends
+mzml_pheno_legend <-  c("Co-culture P.parvum", "Co-culture S.marinoi", "Co-culture S.marinoi", "Co-culture P.parvum", "Co-culture P.parvum", "Co-culture S.marinoi",
+                        rep(x = "Mono-culture S.marinoi", times = 8), rep(x = "Mono-culture P.parvum", times = 8),
+                        "Co-culture S.marinoi", "Co-culture P.parvum")
+
+
 # overview dataframe
-mzml_pheno <- data.frame(mzml_pheno_samples_type, mzml_pheno_origin_samples, mzml_pheno_origin_species)
+mzml_pheno <- data.frame(mzml_pheno_samples_type, mzml_pheno_origin_samples, mzml_pheno_origin_species, mzml_pheno_legend)
 
 
 # remove media blank sample from analysis
@@ -156,6 +175,32 @@ rownames(bina_list) <- paste(pheno_data_ENDO[1:24,1], pheno_data_ENDO[1:24,2], s
 #rownames(uniq_list) <- paste(pheno_data_ENDO[1:24,1], pheno_data_ENDO[1:24,2], sep = "_" )
 #length(table(which(uniq_list == 1)))
 
+## save feat_list and bina_list
+# save as csv
+write.csv(feat_list_ENDO, file = "ENDO_stats_Results/feat_list_ENDO.csv")
+write.csv(bina_list_ENDO, file = "ENDO_stats_Results/bina_list_ENDO.csv")
+
+# ##################### create objects for analysis on species level ###########
+# index for the species types
+index_SM <- grep("Sm", pheno_data_ENDO$sample_group)
+index_PP <- grep("Pp", pheno_data_ENDO$sample_group)
+
+# divide the feature table by species type
+feat_list_ENDO_Sm <- feat_list_ENDO[index_SM,]
+feat_list_ENDO_Pp <- feat_list_ENDO[index_PP,]
+
+# create objets for Statistical analysis
+# comp_list species
+comp_list_Sm <- feat_list_ENDO_Sm
+comp_list_Sm <- comp_list_Sm[] # removes missing values
+
+comp_list_Pp <- feat_list_ENDO_Pp
+comp_list_Pp <- comp_list_Pp
+
+# divide bina list by species type
+bina_list_Sm <- bina_list_ENDO[index_SM,]
+bina_list_Pp <- bina_list_ENDO[index_PP,]
+
 # ############################## MS1 statistics (ALL FEATURES) ##############################
 
 
@@ -177,16 +222,21 @@ model_div$fisher      <- apply(X=comp_list, MARGIN=1, FUN=function(x) { fisher.a
 
 # test for functional hill
 # subset comp_list for the first 20 features
-comp_list_hillfunc <- comp_list[,1:1000]
-model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list_hillfunc, compDisMat=scales::rescale(as.matrix(dist(t(comp_list_hillfunc)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
+#comp_list_hillfunc <- comp_list[,1:1000]
+#model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list_hillfunc, compDisMat=scales::rescale(as.matrix(dist(t(comp_list_hillfunc)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
 
+# color for shannon plot
+col_shan <- c(unique(CoCuPp1), unique(CoCuSm1), unique(CoCuPp1), unique(CoCuSm1))
 
 # Plot Shannon index
 pdf(paste("ENDO_stats_plots/ms1_comp_list_diversity_shannon_Culture.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=5, height=5, family="Helvetica")
-boxplot(model_div$shannon ~ mzml_pheno_origin_samples, col=mzml_pheno_colors, main="Shannon diversity (H\')", xlab="culture types", ylab="Shannon diversity index (H\')")
-text(1:length(levels(mzml_pheno_origin_samples)), par("usr")[3]-(par("usr")[4]-par("usr")[3])/14, srt=-22.5, adj=0.5, labels=levels(mzml_pheno_samples), xpd=TRUE, cex=0.9)
-div_tukey <- tukey.test(response=model_div$shannon, term=as.factor(mzml_pheno_origin_samples))
-text(1:length(levels(mzml_pheno_origin_samples)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
+#jpeg(filename = "ENDO_stats_plots/ms1_comp_list_diversity_shannon_Culture.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+boxplot(model_div$shannon ~ mzml_pheno_samples_type, col= col_shan, main="Shannon diversity (H\')", xlab="culture types", ylab="Shannon diversity index (H\')")
+text(1:length(levels(mzml_pheno_samples_type)), par("usr")[3]-(par("usr")[4]-par("usr")[3])/14, srt=-22.5, adj=0.5, labels=levels(mzml_pheno_samples_type), xpd=TRUE, cex=0.9)
+div_tukey <- tukey.test(response=model_div$shannon, term=as.factor(mzml_pheno_samples_type))
+text(1:length(levels(mzml_pheno_samples_type)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
+legend("bottomleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(col_shan), legend= c("P.parvum", "S.marinoi"))
 dev.off()
 
 # ---------- PLS ----------
@@ -221,66 +271,210 @@ principal_components <- 5
 # plot(ncomp, unlist(cv_results), type = "b", xlab = "Number of PLS components", ylab = "Cross-validation error")
 
 
-# PLS according to Culture type
-sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, 
-                                           sel_factor=mzml_pheno_origin_samples, 
-                                           sel_colors=mzml_pheno_colors, 
+# PLS according to culture type by species Pp
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_Pp, 
+                                           sel_factor=mzml_pheno_origin_samples[index_PP], 
+                                           sel_colors=mzml_pheno_colors[index_PP], 
                                            components=principal_components, tune_length=10, 
-                                           quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_pls_roc_culture.pdf")
+                                           quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_pls_roc_Pp.pdf")
 print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-f.heatmap.selected_features(feat_list=comp_list, 
+f.heatmap.selected_features(feat_list=comp_list_Pp, 
                             sel_feat=sel_pls_comp_list$`_selected_variables_`, 
                             sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`), 
-                            sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
-heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), 
+                            sample_colors=mzml_pheno_colors[index_PP], plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
+heatmaply(scale(comp_list_Pp[, which(colnames(comp_list_Pp) %in% sel_pls_comp_list$`_selected_variables_`)]), 
           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
-          file="ENDO_stats_plots/ms1_comp_list_select_pls_culture.html", selfcontained=TRUE)
+          file="ENDO_stats_plots/ms1_comp_list_select_pls_Pp.html", selfcontained=TRUE)
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
 
-save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture.RData")
+# selected features from PLS 
+features_CoCuPp <- sel_pls_comp_list$`_selected_variables_`
 
-# PLS including both factors Species and Culture type
-# sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, 
-#                                            sel_factor=as.factor(c(mzml_pheno_origin_samples, mzml_pheno_origin_species)), # include species parameter
-#                                            sel_colors=mzml_pheno_colors,
-#                                            components=principal_components, tune_length=10, 
-#                                            quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_pls_roc_SPCU.pdf")
-# print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-# f.heatmap.selected_features(feat_list=comp_list, 
-#                             sel_feat=sel_pls_comp_list$`_selected_variables_`, 
-#                             sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`), 
-#                             sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
-# heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), 
-#           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
-#           file="ENDO_stats_plots/ms1_comp_list_select_pls_SPCU.html", selfcontained=TRUE)
-# sel_pls_comp_list$`_selected_variables_`
-# sel_pls_comp_list$`_model_r2_`
-# sel_pls_comp_list$`_multiclass_metrics_`
-# 
-# save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_SPCU.RData")
+save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Pp.RData")
 
+# PLS according to Culture type by species Sm
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_Sm, 
+                                           sel_factor=mzml_pheno_origin_samples[index_SM], 
+                                           sel_colors=mzml_pheno_colors[index_SM], 
+                                           components=principal_components, tune_length=10, 
+                                           quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_pls_roc_Sm.pdf")
+print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=comp_list_Sm, 
+                            sel_feat=sel_pls_comp_list$`_selected_variables_`, 
+                            sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`), 
+                            sample_colors=mzml_pheno_colors[index_SM], plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
+heatmaply(scale(comp_list_Sm[, which(colnames(comp_list_Sm) %in% sel_pls_comp_list$`_selected_variables_`)]), 
+          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+          file="ENDO_stats_plots/ms1_comp_list_select_pls_Sm.html", selfcontained=TRUE)
+sel_pls_comp_list$`_selected_variables_`
+sel_pls_comp_list$`_model_r2_`
+sel_pls_comp_list$`_multiclass_metrics_`
+
+save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Sm.RData")
+
+
+# ---------- Check CoCu Pp features in Sm samples ----------
+# index for monoculture and coculture for the species
+index_MOSM <- grep("Mono-culture S.m", mzml_pheno$mzml_pheno_legend)
+index_MOPP <- grep("Mono-culture P.p", mzml_pheno$mzml_pheno_legend)
+
+# index for coculture for the species
+index_COSM <- grep("Co-culture S.m", mzml_pheno$mzml_pheno_legend)
+index_COPP <- grep("Co-culture P.p", mzml_pheno$mzml_pheno_legend)
+
+# selected features from PLS for CoCuPp
+length(features_CoCuPp)
+
+# search in Sm ENDO metabolome
+comp_list_SmEn <- comp_list[index_SM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_SmEn <- comp_list_SmEn[,colSums(comp_list_SmEn != 0) > 0]
+# remove peaks that are only present in 1 sample
+max(comp_list_SmEn)
+comp_list_SmEn <- comp_list_SmEn[, (colSums(comp_list_SmEn) > max(comp_list_SmEn)) > 0]
+
+
+
+# search in Monoculture Sm ENDO 
+comp_list_MoSmEn <- comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_MoSmEn <- comp_list_MoSmEn[,colSums(comp_list_MoSmEn != 0) > 0]
+
+
+# scale data
+comp_list_MoSmEn <- scale((comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]))
+comp_list_MoSmEn[which(is.na(comp_list_MoSmEn))] <- 0
+
+heatmaply(comp_list_MoSmEn, 
+          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+          file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_Sm.html", selfcontained=TRUE)
+
+# search in Coculture Sm ENDO
+comp_list_CoSmEn <- comp_list[index_COSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_CoSmEn <- comp_list_CoSmEn[,colSums(comp_list_CoSmEn != 0) > 0]
+
+
+
+
+heatmaply(comp_list_CoSmEn, 
+          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+          file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_SmCoCu.html", selfcontained=TRUE)
+
+
+# search in Monoculture Sm EXO 
+load("exo_stats_Results/comp_list_EXO.RData")
+comp_list_MoSmEx <- comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_MoSmEx <- comp_list_MoSmEx[,colSums(comp_list_MoSmEx != 0) > 0]
+# remove peaks that are only present in 1 sample
+max(comp_list_MoSmEx)
+comp_list_MoSmEx <- comp_list_MoSmEx[, (colSums(comp_list_MoSmEx) > max(comp_list_MoSmEx)) > 0]
+
+# plot in heatmap
+heatmaply(comp_list_MoSmEx, 
+          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+          file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_EXOSmMonoCu.html", selfcontained=TRUE)
+
+# compare the found features
+# ENDO Sm
+features_ENDOSm_Pp <- colnames(comp_list_SmEn)
+count_ENDOSm_Pp <- colSums(comp_list_SmEn != 0)
+ENDOSm_Pp <- c(features_ENDOSm_Pp, count_ENDOSm_Pp )
+# EXO MonoCu Sm
+features_EXOMonoSm_Pp <- colnames(comp_list_MoSmEx)
+count_EXOMonoSm_Pp <- colSums(comp_list_MoSmEx != 0)
+EXOMonoSm_Pp <- data.frame(features_EXOMonoSm_Pp, count_EXOMonoSm_Pp)
+
+
+
+# ---------- PCA  ----------
+# combined feature table pos and neg
+#pdf(paste("ENDO_stats_plots/PCA_legend.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=10, height=10, family="Helvetica")
+jpeg(filename = "ENDO_stats_plots/ENDO_ms1_feature_table_pca.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+ms1_pca_ENDO <- prcomp(comp_list[1:24,], center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
+plot(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], pch=19, main="PCA of feature table",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO)$importance[2, 2] * 100, digits=3), " % variance"),
+     col=color, cex=2)
+grid()
+text(ms1_pca_ENDO$x[,1], ms1_pca_ENDO$x[,2], labels=str_sub(rownames(feat_list_ENDO)[1:24], - 3, - 1), col=color, pos=3, cex=1.5)
+legend("topleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color), legend= unique(mzml_pheno$mzml_pheno_legend))
+dev.off()
+
+# Skeletonema marinoi
+jpeg(filename = "ENDO_stats_plots/ENDO_ms1_feature_table_pca_Sm.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+ms1_pca_ENDO <- prcomp(comp_list_Sm, center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
+plot(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], pch=19, main="PCA of feature table",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO)$importance[2, 2] * 100, digits=3), " % variance"),
+     col=color[index_SM], cex=2)
+grid()
+text(ms1_pca_ENDO$x[,1], ms1_pca_ENDO$x[,2], labels=str_sub(rownames(feat_list_ENDO)[index_SM], - 3, - 1), col=color[index_SM], pos=3, cex=1.5)
+legend("topleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color[index_SM]), legend= unique(mzml_pheno$mzml_pheno_samples_type[index_SM]))
+dev.off()
+
+# Prymnesium parvum
+jpeg(filename = "ENDO_stats_plots/ENDO_ms1_feature_table_pca_Pp.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+ms1_pca_ENDO <- prcomp(comp_list_Pp, center=TRUE)
+par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
+plot(ms1_pca_ENDO$x[, 1], ms1_pca_ENDO$x[,2], pch=19, main="PCA of feature table",
+     xlab=paste0("PC1: ", format(summary(ms1_pca_ENDO)$importance[2, 1] * 100, digits=3), " % variance"),
+     ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO)$importance[2, 2] * 100, digits=3), " % variance"),
+     col=color[index_PP], cex=2)
+grid()
+text(ms1_pca_ENDO$x[,1], ms1_pca_ENDO$x[,2], labels=str_sub(rownames(feat_list_ENDO)[index_PP], - 3, - 1), col=color[index_PP], pos=3, cex=1.5)
+legend("topleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color[index_PP]), legend= unique(mzml_pheno$mzml_pheno_samples_type[index_PP]))
+dev.off()
 
 # ---------- Variation partitioning ----------
-# 
-library(vegan)
-model_varpart  <- varpart(scale(comp_list), ~ mzml_pheno_samples , ~ mzml_pheno_samples )
-length(comp_list)
-nrow(comp_list)
-summary(mzml_pheno_samples)
-summary(mzml_pheno_origin_samples)
-summary(mzml_pheno_origin_species)
-
-
+# normalize comp_list
+comp_list_varpart <- scale(comp_list_Pp)
+# remove NaN from data 
+comp_list_varpart[which(is.na(comp_list_varpart))] <- 0
+# perfomr Varpart
+model_varpart  <- varpart(comp_list_varpart, ~ mzml_pheno_origin_samples[index_PP] , ~ mzml_pheno_origin_samples[index_PP]  )
 
 # Plot results
-pdf(file="ENDO_stats_plots/pos_ms1_varpart.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
+pdf(file="ENDO_stats_plots/pos_ms1_varpart_Pp.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
 plot(model_varpart , Xnames=c("samples","culture type"), cutoff=0, cex=1.2, id.size=1.2, digits=1, bg=c("blue","green"))
 dev.off()
- 
+
+
 # --------- ANOVA ----------
-model_anova <- aov(comp_list, ~ mzml_pheno_origin_samples , ~ mzml_pheno_origin_species, data = comp_list )
+model_anova <- aov(mzml_pheno_origin_samples ~ mzml_pheno_origin_species, data = comp_list)
+# only 4 monoculture samples
+comp_list_aov <-  comp_list_Sm[-(6:9),]
+culture_aov <- mzml_pheno_origin_samples[index_SM]
+culture_aov <- culture_aov[-(6:9)]
+# factor vector 
+features <- as.factor(colnames(comp_list_aov))
+
+model_anova <- aov(features ~ culture_aov,
+                   data = comp_list_aov)
+
+# --------- t-SNE ----------
+library(M3C)
+
+# subset for testing
+test_tsne <- feat_list_ENDO_Sm[,1:100]
+# normalize to z-score
+test_tsne <- scale(test_tsne)
+# missing value imputation
+test_tsne[which(is.na(test_tsne))] <- 0
+# remove columns that are all 0
+column_sums <- colSums(test_tsne)
+non_zero_cols <- column_sums != 0
+test_tsne <- test_tsne[, non_zero_cols]
+
+
+tsne(test_tsne, perplexity = 30, labels=as.factor(rownames(test_tsne)))
+
+
+
 
 # -------- Random forest -----
 # Load the data
@@ -311,160 +505,15 @@ dev.off()
 
 
 
+
+
+
+
+
+
+
+
+
 ############################## MS1 statistics (containing MS2 spectra) ##############################
-# 
-# mzml_pheno_samples <- samp_groups_description
-# mzml_pheno_colors <- color
-# principal_components <- 5
-# 
-# # remove MB from lists for analysis
-# feat_list_nMB <- feat_list_ENDO_pos[-(25),]
-# bina_list_nMB <- bina_list_ENDO_pos[-(25),]
-# 
-# # creates lists of MS1 features that have ms2 spectra 
-# # comp_list
-# comp_list <- feat_list_ENDO_pos_nMB[, c(rownames(ms1_def_ENDO_pos)[which(ms1_def_ENDO_pos$has_ms2==1)])]
-# comp_list <- comp_list[]
-# colnames(comp_list) <- paste0(rownames(ms1_def_ENDO_pos)[which(ms1_def_ENDO_pos$has_ms2==1)], "_pos")
-# 
-# # bina_list
-# bina_list <- feat_list_ENDO_pos_nMB[, c(rownames(ms1_def_ENDO_pos)[which(ms1_def_ENDO_pos$has_ms2==1)])]
-# colnames(bina_list) <- paste0(rownames(ms1_def_ENDO_pos)[which(ms1_def_ENDO_pos$has_ms2==1)], "_pos")
-# 
-# # uniq_list
-# uniq_list <- uniq_list_ENDO_pos[, c(rownames(ms1_def_ENDO_pos)[which(ms1_def_ENDO_pos$has_ms2==1)])]
-# rownames(uniq_list_ENDO_pos) <- gsub(x=rownames(uniq_list_ENDO_pos), pattern="\\.auto.*", replacement="")
-# colnames(uniq_list_ENDO_pos) <- paste0(rownames(ms1_def_ENDO_pos)[which(ms1_def_ENDO_pos$has_ms2==1)], "_pos")
-# 
-# # Merge pos and neg div_classes
-# #div_classes <- div_classes_ENDO_pos
-# #div_classes_samples <- div_classes_samples_ENDO_pos
-# 
-# # Merge pos and neg div_superclasses
-# #div_superclasses <- div_superclasses_ENDO_pos
-# #div_superclasses_samples <- div_superclasses_samples_ENDO_pos
-# 
-# # Merge pos and neg div_subclasses
-# #div_subclasses <- div_subclasses_ENDO_pos
-# #div_subclasses_samples <- div_subclasses_samples_ENDO_pos
-# 
-# # class_list
-# #class_list <- class_list_ENDO_pos
-# #rownames(class_list) <- gsub(x=rownames(class_list_ENDO_pos), pattern="\\.auto.*", replacement="")
-# 
-# # class_int_list
-# #class_int_list <- class_int_list_ENDO_pos
-# #rownames(class_int_list) <- gsub(x=rownames(class_int_list_ENDO_pos), pattern="\\.auto.*", replacement="")
-# 
-# # superclass_list
-# #superclass_list <- superclass_list_ENDO_pos
-# #rownames(superclass_list) <- gsub(x=rownames(superclass_list_ENDO_pos), pattern="\\.auto.*", replacement="")
-# 
-# # superclass_int_list
-# #superclass_int_list <- superclass_int_list_ENDO_pos
-# #rownames(superclass_int_list) <- gsub(x=rownames(superclass_int_list_ENDO_pos), pattern="\\.auto.*", replacement="")
-# 
-# # subclass_list
-# #subclass_list <- subclass_list_ENDO_pos
-# #rownames(subclass_list) <- gsub(x=rownames(subclass_list_ENDO_pos), pattern="\\.auto.*", replacement="")
-# 
-# # subclass_int_list
-# #subclass_int_list <- subclass_int_list_ENDO_pos
-# #rownames(subclass_int_list) <- gsub(x=rownames(subclass_int_list_ENDO_pos), pattern="\\.auto.*", replacement="")
-# 
-# #cdk_descriptors <- cdk_descriptors_ENDO_pos
-# 
-# 
-# ## only on features with MS2 spectra found
-# # Create data frame
-# model_div             <- data.frame(features=apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } ))
-# model_div$richness    <- apply(X=bina_list, MARGIN=1, FUN=function(x) { sum(x) } )
-# model_div$menhinick   <- apply(X=bina_list, MARGIN=1, FUN=function(x) { menhinick.diversity(x) } )
-# model_div$shannon     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") })
-# model_div$pielou      <- apply(X=scale(comp_list, center=FALSE, scale=FALSE), MARGIN=1, FUN=function(x) { vegan::diversity(x, index="shannon") / log(vegan::specnumber(x)) })
-# #model_div$chao        <- vegan::specpool2vect(X=vegan::specpool(feat_list, species), index="chao")
-# model_div$simpson     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="simpson") })
-# model_div$inverse     <- apply(X=comp_list, MARGIN=1, FUN=function(x) { vegan::diversity(x, index="inv") })
-# model_div$fisher      <- apply(X=comp_list, MARGIN=1, FUN=function(x) { fisher.alpha(round(x,0)) })
-# model_div$unique      <- apply(X=uniq_list, MARGIN=1, FUN=function(x) { sum(x) })
-# model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list, compDisMat=scales::rescale(as.matrix(dist(t(comp_list)), diag=TRUE, upper=TRUE)), q=1, type="FuncHillDiv")))
-# 
-# # Plot Shannon index
-# pdf(paste("ENDO_stats_plots/ms1_comp_list_diversity_shannon.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=5, height=5, family="Helvetica")
-# boxplot(model_div$shannon ~ mzml_pheno_samples, col=mzml_pheno_colors, names=NA, main="Shannon diversity (H\')", xlab="treatment", ylab="Shannon diversity index (H\')")
-# text(1:length(levels(mzml_pheno_samples)), par("usr")[3]-(par("usr")[4]-par("usr")[3])/14, srt=-22.5, adj=0.5, labels=levels(mzml_pheno_samples), xpd=TRUE, cex=0.9)
-# div_tukey <- tukey.test(response=model_div$shannon, term=as.factor(mzml_pheno_samples))
-# text(1:length(levels(mzml_pheno_samples)), par("usr")[4]+(par("usr")[4]-par("usr")[3])/40, adj=0.5, labels=div_tukey[,1], xpd=TRUE, cex=0.8)
-# dev.off()
-# 
-# # PLS
-# sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_pls_roc.pdf")
-# print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-# f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_pls_comp_list$`_selected_variables_`, sel_names=paste0("         ",sel_pls_comp_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
-# heatmaply(scale(comp_list[, which(colnames(comp_list) %in% sel_pls_comp_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="ENDO_stats_plots/ms1_comp_list_select_pls.html", selfcontained=TRUE)
-# sel_pls_comp_list$`_selected_variables_`
-# sel_pls_comp_list$`_model_r2_`
-# sel_pls_comp_list$`_multiclass_metrics_`
-# 
-# save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list.RData")
-
-# # ---------- Variation partitioning ----------
-# # sample dependent
-# mzml_pheno_samples_type <- samp_groups
-# mzml_pheno_samples
-# # mono-culture or co-culture
-# mzml_pheno_origin_samples_pos <- as.factor(origin_samp_groups <- c("CoCu", "CoCu", "CoCu", "CoCu", "CoCu", "CoCu",
-#                                                             rep(x = "MonoCu", times = 8), 
-#                                                             rep(x = "MonoCu", times = 8),
-#                                                             "CoCu", "CoCu", "MB")
-# )
-#   
-# model_varpart_pos <- varpart(scale(comp_list), ~ mzml_pheno_samples, ~ mzml_pheno_origin_samples_pos )
-# 
-# # Plot results
-# pdf(file="ENDO_stats_plots/pos_ms1_varpart.pdf", encoding="ISOLatin1", pointsize=10, width=6, height=4, family="Helvetica")
-# plot(model_varpart_pos, Xnames=c("samples","culture type"), cutoff=0, cex=1.2, id.size=1.2, digits=1, bg=c("blue","green"))
-# dev.off()
-
-
-# ############################## MS2 statistics examples ##############################
-# 
-# # PLS
-# sel_pls_class_list <- f.select_features_pls(feat_matrix=class_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.95, plot_roc_filename="plots/ms2_class_list_select_pls_roc.pdf")
-# print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_class_list$`_selected_variables_`)))
-# f.heatmap.selected_features(feat_list=class_list, sel_feat=sel_pls_class_list$`_selected_variables_`, sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/ms2_class_list_select_pls.pdf", main="PLS")
-# heatmaply(scale(class_list[, which(colnames(class_list) %in% sel_pls_class_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/ms2_class_list_select_pls.html", selfcontained=TRUE)
-# sel_pls_class_list$`_multiclass_metrics_`
-# sel_pls_class_list$`_model_r2_`
-# 
-
-
-# ############################## Molecular descriptors examples ##############################
-# 
-# 
-# # Table L: samples x metabolites
-# mdes_tab_l <- bina_list
-# mdes_tab_l <- bina_list[, which(colnames(bina_list) %in% paste0(rownames(ms1_def_ENDO_pos)[which(ms1_def_ENDO_pos$smiles != "")], "_neg"))]
-# mdes_tab_l <- as.data.frame(mdes_tab_l)
-# 
-# # Table R: samples x species
-# mdes_tab_r <- as.data.frame.matrix(table(rownames(mdes_tab_l), mzml_pheno_samples))
-# rownames(mdes_tab_r) <- rownames(mdes_tab_l)
-# 
-# # Table Q: metabolites x traits
-# mdes_tab_q <- cdk_descriptors
-# mdes_tab_q[is.na(mdes_tab_q)] <- 0
-# 
-# # Perform matrix operation
-# mdes_list <- as.data.frame(as.matrix(mdes_tab_l) %*% as.matrix(mdes_tab_q))
-# 
-# # PLS
-# sel_pls_mdes_list <- f.select_features_pls(feat_matrix=mdes_list, sel_factor=mzml_pheno_samples, sel_colors=mzml_pheno_colors, components=principal_components, tune_length=10, quantile_threshold=0.995, plot_roc_filename="plots/descriptors_bina_list_select_pls_roc.pdf")
-# print(paste("Number of selected descriptors:", f.count.selected_features(sel_feat=sel_pls_mdes_list$`_selected_variables_`)))
-# f.heatmap.selected_features(feat_list=mdes_list, sel_feat=sel_pls_mdes_list$`_selected_variables_`, sel_names=paste0("        ",sel_pls_mdes_list$`_selected_variables_`), sample_colors=mzml_pheno_colors, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename="plots/descriptors_bina_list_select_pls.pdf", main="PLS")
-# heatmaply(scale(mdes_list[, which(colnames(mdes_list) %in% sel_pls_mdes_list$`_selected_variables_`)]), k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), file="plots/descriptors_bina_list_select_pls.html", selfcontained=TRUE)
-# sel_pls_mdes_list$`_multiclass_metrics_`
-# sel_pls_mdes_list$`_model_r2_`
-# sel_pls_mdes_list$`_selected_variables_`
-# 
+ 
 
