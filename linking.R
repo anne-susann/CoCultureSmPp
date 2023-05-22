@@ -208,7 +208,7 @@ pol = "_pos" # or "_neg"
 inc_tbl1 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
 inc_tbl1 
 
-ann_tbl1 <- link_ann_inc(inc_tbl = inc_tbl1 , ann_tbl, cond)
+ann_tbl1 <- link_ann_inc(inc_tbl = paste("ms_tbl_", cond, ".csv", sep = ""), ann_tbl, cond)
 ann_tbl1
 
 significant_annotated_feats <- assign_sig_feat(sig_feat, ann_tbl_modified, cond, pol, feat_col, origin_col)
