@@ -167,18 +167,18 @@ assign_sig_feat <- function(sig_feat, ann_tbl_modified, cond, pol, feat_col, ori
   sig_feat_pos["sig_feat_ids"]
   
   ann_tbl["origin"] <- NA
-  ann_tbl
-  colnames(sig_feat_pos)
+
   for (i in 1:nrow(ann_tbl)){
     if (!(is.na(as.character(ann_tbl[i, "feat_inc"])))){
-      
-      if (as.character(ann_tbl[i, "feat_inc"]) == as.character(sig_feat_pos[j, "sig_feat_ids"])){
-        ann_tbl[i, "origin"] <- sig_feat_pos[j, origin_col]
+      for (j in 1:nrow(sig_feat_pos)){
+        if (as.character(ann_tbl[i, "feat_inc"]) == as.character(sig_feat_pos[j, "sig_feat_ids"])){
+          ann_tbl[i, "origin"] <- sig_feat_pos[j, origin_col]
+        }
       }
     }
   }
   
-  write.csv(ann_tbl, paste(cond, "_mergedResults-with-one-Candidates_sig_feat.csv"), sep = "")
+  write.csv(ann_tbl, paste(cond, "_mergedResults-with-one-Candidates_sig_feat_for_only_inclusion.csv", sep = ""))
   return(ann_tbl)
 }
 
@@ -186,13 +186,13 @@ assign_sig_feat <- function(sig_feat, ann_tbl_modified, cond, pol, feat_col, ori
 
 #---------------------------------------------------------------------------------------------------------------------------
 
-##### script #####
+##### script for exo_pos #####
 
 
 
-setwd("/any/dir")
+setwd("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking")
 
-ft_csv = "feature_info_EXO_pos.csv"
+ft_csv = "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/feature_info_EXO_pos.csv"
 inc_csv = "KSS_210324_EXO_pos.csv"
 cond = "exo_pos"
 mass_col = "Mass"
@@ -200,9 +200,9 @@ rtmin_col = "Start"
 rtmax_col = "End"
 ann_tbl <- "exo_pos_mergedResults-with-one-Candidates.csv"
 ann_tbl_modified <- paste(cond, "_ann.csv", sep ="")
-sig_feat <- "sel_pls_feat_ENDO.csv"
+sig_feat <- "sel_pls_feat_EXO.csv"
 feat_col <- "sel_pls_features_EXO"
-origin <- "originEXO"
+origin_col <- "origin_EXO"
 pol = "_pos" # or "_neg"
 
 inc_tbl1 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
@@ -211,5 +211,209 @@ inc_tbl1
 ann_tbl1 <- link_ann_inc(inc_tbl = paste("ms_tbl_", cond, ".csv", sep = ""), ann_tbl, cond)
 ann_tbl1
 
-significant_annotated_feats <- assign_sig_feat(sig_feat, ann_tbl_modified, cond, pol, feat_col, origin_col)
-significant_annotated_feats
+sig_features <- assign_sig_feat(sig_feat, 
+                            ann_tbl_modified, 
+                            cond, 
+                            pol, 
+                            feat_col, 
+                            origin_col)
+
+no_of_sig_feats<- nrow(sig_features[!(is.na(sig_features["origin"])), ])
+
+sgg <- sig_features[!(is.na(sig_features["origin"])), ]
+
+##### script for exo_neg #####
+
+
+
+setwd("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking")
+
+ft_csv = "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/feature_info_EXO_neg.csv"
+inc_csv = "KSS_210324_EXO_neg.csv"
+cond = "exo_neg"
+mass_col = "Mass"
+rtmin_col = "Start"
+rtmax_col = "End"
+ann_tbl <- "exo_neg_mergedResults-with-one-Candidates.csv"
+ann_tbl_modified <- paste(cond, "_ann.csv", sep ="")
+sig_feat <- "sel_pls_feat_EXO.csv"
+feat_col <- "sel_pls_features_EXO"
+origin_col <- "origin_EXO"
+pol = "_neg"
+
+inc_tbl2 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
+inc_tbl2 
+
+ann_tbl2 <- link_ann_inc(inc_tbl = paste("ms_tbl_", cond, ".csv", sep = ""), ann_tbl, cond)
+ann_tbl2
+
+sig_features2 <- assign_sig_feat(sig_feat, 
+                                ann_tbl_modified, 
+                                cond, 
+                                pol, 
+                                feat_col, 
+                                origin_col)
+
+no_of_sig_feats2 <- nrow(sig_features2[!(is.na(sig_features2["origin"])), ])
+
+sig3 <- sig_features2[!(is.na(sig_features2["origin"])), ]
+
+##### script for endo_neg #####
+
+
+
+setwd("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking")
+
+ft_csv = "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/feature_info_ENDO_neg.csv"
+inc_csv = "KSS_210324_ENDO_neg.csv"
+cond = "endo_neg"
+mass_col = "Mass"
+rtmin_col = "Start"
+rtmax_col = "End"
+ann_tbl <- "endo_neg_mergedResults-with-one-Candidates.csv"
+ann_tbl_modified <- paste(cond, "_ann.csv", sep ="")
+sig_feat <- "sel_pls_feat_ENDO.csv"
+feat_col <- "sel_pls_features_ENDO"
+origin_col <- "origin"
+pol = "_neg"
+
+inc_tbl3 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
+inc_tbl3 
+
+ann_tbl3 <- link_ann_inc(inc_tbl = paste("ms_tbl_", cond, ".csv", sep = ""), ann_tbl, cond)
+ann_tbl3
+
+sig_features3 <- assign_sig_feat(sig_feat, 
+                                ann_tbl_modified, 
+                                cond, 
+                                pol, 
+                                feat_col, 
+                                origin_col)
+
+no_of_sig_feats3<- nrow(sig_features3[!(is.na(sig_features3["origin"])), ])
+no_of_sig_feats3
+
+##### script for endo_pos #####
+
+
+
+setwd("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking")
+
+ft_csv = "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/feature_info_ENDO_pos.csv"
+inc_csv = "KSS_210324_ENDO_pos.csv"
+cond = "endo_pos"
+mass_col = "Mass"
+rtmin_col = "Start"
+rtmax_col = "End"
+ann_tbl <- "endo_pos_mergedResults-with-one-Candidates.csv"
+ann_tbl_modified <- paste(cond, "_ann.csv", sep ="")
+sig_feat <- "sel_pls_feat_ENDO.csv"
+feat_col <- "sel_pls_features_ENDO"
+origin_col <- "origin"
+pol = "_pos"
+
+inc_tbl4 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
+inc_tbl4 
+
+ann_tbl4 <- link_ann_inc(inc_tbl = paste("ms_tbl_", cond, ".csv", sep = ""), ann_tbl, cond)
+ann_tbl4
+
+sig_features4 <- assign_sig_feat(sig_feat, 
+                                 ann_tbl_modified, 
+                                 cond, 
+                                 pol, 
+                                 feat_col, 
+                                 origin_col)
+
+no_of_sig_feats4 <- nrow(sig_features4[!(is.na(sig_features4["origin"])), ])
+sig <- sig_features4[!(is.na(sig_features4["origin"])), ]
+
+
+
+##### Linking conditions to the feature ids for endo pos#####
+
+df <- read.csv("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/feature_list_ENDO_pos.csv")
+
+df_t <- t(df)
+
+colnames(df_t) <- unlist(df_t[1, ])
+
+unlist(df_t[1, ])
+
+df_t <- df_t[-1, ]
+
+
+
+rep_name <- colnames(df_t)
+rep_name
+condition <- c("PpCoCu", 
+               "SmCoCu",
+               "SmCoCu",
+               "PpCoCu",
+               "PpCoCu",
+               "SmCoCu",
+               rep("SmMono", 8),
+               rep("PpMono", 8),
+               "SmCoCu",
+               "PpCoCu",
+               "MB")
+Sample_metadata <- cbind(rep_name, condition)
+Sample_metadata
+
+df_t[] <- sapply(df_t, as.numeric)
+
+write.csv(df_t, "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/transposed_list_ENDO_pos.csv")
+
+df_t<- read.csv("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/transposed_list_ENDO_pos.csv")
+
+ft_id <- c()
+PpCoCu <- c()
+PpMono <- c()
+SmCoCu <- c()
+SmMono <- c()
+MB <- c()
+for (i in 1:nrow(df_t)){
+  ft_id <- c(ft_id, df_t[i, "X"])
+  #median of p.p coculture intensity
+  PpC <- median(df_t[i, "coculture_pos_ENDO_9b"], df_t[i, "coculture_pos_ENDO_10a"], df_t[i, "coculture_pos_ENDO_11b"], df_t[i, "coculture_pos_ENDO_12a"])
+  PpCoCu <- c(PpCoCu, PpC)
+  #median of s.m coculture intensity
+  SmC <- median(df_t[i, "coculture_pos_ENDO_9a"], df_t[i, "coculture_pos_ENDO_10b"], df_t[i, "coculture_pos_ENDO_11a"], df_t[i, "coculture_pos_ENDO_12b"])
+  SmCoCu <- c(SmCoCu, SmC)
+  #median of P.p monoculture intensity
+  PpM <- median(df_t[i, "coculture_pos_ENDO_5a"], df_t[i, "coculture_pos_ENDO_5b"], df_t[i, "coculture_pos_ENDO_6a"], df_t[i, "coculture_pos_ENDO_6b"],
+                df_t[i, "coculture_pos_ENDO_7a"], df_t[i, "coculture_pos_ENDO_7b"], df_t[i, "coculture_pos_ENDO_8a"], df_t[i, "coculture_pos_ENDO_8b"])
+  PpMono <- c(PpMono, PpM)
+  #median of S.m monoculture intensity
+  SmM <- median(df_t[i, "coculture_pos_ENDO_1A"], df_t[i, "coculture_pos_ENDO_1b"], df_t[i, "coculture_pos_ENDO_2a"], df_t[i, "coculture_pos_ENDO_2b"],
+                df_t[i, "coculture_pos_ENDO_3a"], df_t[i, "coculture_pos_ENDO_3b"], df_t[i, "coculture_pos_ENDO_4a"], df_t[i, "coculture_pos_ENDO_4b"])
+  SmMono <- c(SmMono, SmM)
+  MB <- c(MB, df_t[i, "coculture_pos_ENDO_MB"])
+}
+
+int_feat_df <- cbind(ft_id, PpCoCu, SmCoCu, PpMono, SmMono, MB)
+int_feat_df
+
+ann_feat_df <- read.csv("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/endo_pos_mergedResults-with-one-Candidates_sig_feat_for_only_inclusion.csv")
+
+ann_feat_df["PpCoCu"] <- NA 
+ann_feat_df["SmCoCu"] <- NA 
+ann_feat_df["PpMono"] <- NA 
+ann_feat_df["SmMono"] <- NA 
+ann_feat_df["MB"] <- NA 
+
+for (i in 1:nrow(ann_feat_df)){
+  if (!(is.na(as.character(ann_feat_df[i, "feat_inc"])))){
+    for (j in 1:nrow(int_feat_df)){
+      if (as.character(ann_feat_df[i, "feat_inc"]) == as.character(int_feat_df[j, "ft_id"])){
+        ann_feat_df[i, "PpCoCu"] <- int_feat_df[j, "PpCoCu"] 
+        ann_feat_df[i, "SmCoCu"] <- int_feat_df[j, "SmCoCu"] 
+        ann_feat_df[i, "PpMono"] <- int_feat_df[j, "PpMono"] 
+        ann_feat_df[i, "SmMono"] <- int_feat_df[j, "SmMono"] 
+        ann_feat_df[i, "MB"] <- int_feat_df[j, "MB"] 
+      }
+    }
+  }
+}
+
+
