@@ -291,8 +291,11 @@ sel_pls_comp_list$`_multiclass_metrics_`
 
 # selected features from PLS 
 features_CoCuPp <- sel_pls_comp_list$`_selected_variables_`
+features_CoCuPp <- sort(features_CoCuPp, decreasing = FALSE)
 
 save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Pp.RData")
+#load("ENDO_stats_Results/sel_pls_comp_list_culture_Pp.RData")
+
 
 # PLS according to Culture type by species Sm
 sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_Sm, 
@@ -313,6 +316,143 @@ sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
 
 save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Sm.RData")
+#load("ENDO_stats_Results/sel_pls_comp_list_culture_Sm.RData")
+
+# selected features from PLS 
+features_Sm <- sel_pls_comp_list$`_selected_variables_`
+features_Sm <- sort(features_Sm, decreasing = FALSE)
+
+
+# save selected features in a table
+sel_pls_features_ENDO <- c(features_CoCuPp, features_Sm)
+origin_ENDO <- c(rep("features_Pp", length(features_CoCuPp)), rep("features_Sm", length(features_Sm)))
+sel_pls_feat_ENDO <- data.frame(origin, sel_pls_features_ENDO)
+write.csv(sel_pls_feat_ENDO, file = "ENDO_stats_Results/sel_pls_feat_ENDO.csv", row.names = FALSE)
+
+# ---------- PLS on bina list ----------
+
+
+# ---------- PLS on MS1 and MS2 object ----------
+# load feature table MS1andMS2
+feature_list_1ms2_pos <- read.csv("endo_pos/endo_pos_1ms2_Results/feature_list_endo_pos.csv", row.names = 1)
+# remove MB
+feature_list_1ms2_pos <- feature_list_1ms2_pos[-25,]
+
+# set rownames of feature table
+for (i in 1:24) {
+  rownames(feature_list_1ms2_pos)[i] <- gsub("coculture_pos", pheno_data_ENDO$sample_group[i], rownames(feature_list_1ms2_pos)[i])
+}
+rownames(feature_list_1ms2_pos)[25:29] <- gsub("KSS_210401", "MS2", rownames(feature_list_1ms2_pos)[25:29])
+
+
+comp_list_1ms2_pos <- feature_list_1ms2_pos[1:24,]
+
+# where are features in MS2
+test <- feature_list_1ms2_pos[25:29,]
+test_feat <- which(colSums(test) != 0)
+test_sub <- test[,test_feat]
+
+# subset comp_list_1ms2 for features that contain MS2 info
+comp_list_1ms2_pos_MS2 <- comp_list_1ms2_pos[,test_feat]
+
+
+### PLS on ENDO pos MS1 and MS2 feature table
+#mzml_pheno_origin_samples_MS2 <- as.factor(samp_MS2 <- c(origin_samp_groups, "MS2", "MS2"))
+# separate by species
+
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_1ms2_pos_MS2[index_SM,], 
+                                           sel_factor=mzml_pheno_origin_samples[index_SM], 
+                                           sel_colors=mzml_pheno_colors[index_SM], 
+                                           components=principal_components, tune_length=10, 
+                                           quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_select_pls_roc_ENDO_pos_1MS2_MS2_SM.pdf")
+print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=comp_list_1ms2_pos_MS2[index_SM,], 
+                            sel_feat=sel_pls_comp_list$`_selected_variables_`, 
+                            sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`), 
+                            sample_colors=mzml_pheno_colors[index_SM], plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
+heatmaply(scale(comp_list_1ms2_pos_MS2[index_SM, which(colnames(comp_list_1ms2_pos_MS2) %in% sel_pls_comp_list$`_selected_variables_`)]), 
+          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+          file="ENDO_stats_plots/ms1_select_pls_ENDO_pos_1MS2_MS2_SM.html", selfcontained=TRUE)
+sel_pls_comp_list$`_selected_variables_`
+sel_pls_comp_list$`_model_r2_`
+sel_pls_comp_list$`_multiclass_metrics_`
+
+save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_culture_ENDO_pos_1MS2_MS2_SM.RData")
+#load("ENDO_stats_Results/sel_pls_comp_list_culture_Sm.RData")
+# features that are also present in the MS2 samples (only 329 features in comp_list_1ms2_pos_MS2)
+features_ENDO_pos_1MS2_MS2 <- sel_pls_comp_list$`_selected_variables_`
+features_ENDO_pos_1MS2_MS2 <- sort(features_ENDO_pos_1MS2_MS2, decreasing = FALSE)
+
+# features from the whole feature table (comp_list_1ms2_pos, saved as ENDO_neg_1MS2_all.RData)
+features_ENDO_pos_1MS2 <- sel_pls_comp_list$`_selected_variables_`
+features_ENDO_pos_1MS2 <- sort(features_ENDO_pos_1MS2, decreasing = FALSE)
+
+# features from the whole feature table from S. marinoi (comp_list_1ms2_pos, saved as ENDO_neg_1MS2_SM.RData)
+features_ENDO_pos_1MS2_SM <- sel_pls_comp_list$`_selected_variables_`
+features_ENDO_pos_1MS2_SM <- sort(features_ENDO_pos_1MS2_SM, decreasing = FALSE)
+
+# features from the whole feature table from S. marinoi (comp_list_1ms2_pos, saved as ENDO_neg_1MS2_SM.RData)
+features_ENDO_pos_1MS2_PP <- sel_pls_comp_list$`_selected_variables_`
+features_ENDO_pos_1MS2_PP <- sort(features_ENDO_pos_1MS2_PP, decreasing = FALSE)
+
+# save selected features for PP and SM as data frame
+sel_pls_feat_ENDO_pos_1MS2 <- c(features_ENDO_pos_1MS2_PP, features_ENDO_pos_1MS2_SM)
+origin_ENDO_pos <- c(rep("features_Pp", length(features_ENDO_pos_1MS2_PP)), rep("features_Sm", length(features_ENDO_pos_1MS2_SM)))
+sel_pls_feat_ENDOpos_1MS2 <- data.frame(origin_ENDO_pos, sel_pls_feat_ENDO_pos_1MS2)
+write.csv(sel_pls_feat_ENDOpos_1MS2, file = "ENDO_stats_Results/sel_pls_feat_ENDO_pos_1MS2.csv", row.names = FALSE)
+
+# save selected features for PP and SM as data frame
+sel_pls_feat_ENDO_pos_1MS2_MS2 <- c(features_ENDO_pos_1MS2_PP, features_ENDO_pos_1MS2_SM)
+origin_ENDO_pos <- c(rep("features_Pp", length(features_ENDO_pos_1MS2_PP)), rep("features_Sm", length(features_ENDO_pos_1MS2_SM)))
+sel_pls_feat_ENDOpos_1MS2_MS2 <- data.frame(origin_ENDO_pos, sel_pls_feat_ENDO_pos_1MS2_MS2)
+write.csv(sel_pls_feat_ENDOpos_1MS2_MS2, file = "ENDO_stats_Results/sel_pls_feat_ENDO_pos_1MS2_MS2.csv", row.names = FALSE)
+
+
+# ---------- PLS on annotated features ----------
+### PLS on ENDO pos annotated features
+# load annotated feature list
+ann_endo_pos <- read.csv("ENDO_stats_Results/ms_tbl_endo_pos.csv", header = TRUE, sep = ",", dec = ".")
+ann_endo_pos <- ann_endo_pos[,-1]
+ann_endo_pos_dup <- which(duplicated(ann_endo_pos$feat_inc))
+# remove duplicated features
+ann_endo_pos <- ann_endo_pos[!is.na(ann_endo_pos$feat_inc),]
+ann_endo_pos <- ann_endo_pos[!duplicated(ann_endo_pos$feat_inc),]
+
+#rownames(ann_endo_pos) <- ann_endo_pos$feat_inc
+
+# from comp_list select only features present in annotated table
+ann_endo_pos$feat_inc_pos <- paste(ann_endo_pos$feat_inc, "pos", sep = "_")
+index_ann_pos <- which(colnames(comp_list) %in% ann_endo_pos$feat_inc_pos)
+comp_list_ann_pos <- comp_list[,index_ann_pos]
+
+
+
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_ann_pos, 
+                                           sel_factor=mzml_pheno_origin_samples , 
+                                           sel_colors=mzml_pheno_colors , 
+                                           components=principal_components, tune_length=10, 
+                                           quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_select_pls_roc_ann_ENDO_pos.pdf")
+print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
+f.heatmap.selected_features(feat_list=comp_list_ann_pos, 
+                            sel_feat=sel_pls_comp_list$`_selected_variables_`, 
+                            sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`), 
+                            sample_colors=mzml_pheno_colors , plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
+heatmaply(scale(comp_list_ann_pos[, which(colnames(comp_list_ann_pos) %in% sel_pls_comp_list$`_selected_variables_`)]), 
+          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+          file="ENDO_stats_plots/ms1_select_pls_ann_ENDO_pos.html", selfcontained=TRUE)
+sel_pls_comp_list$`_selected_variables_`
+sel_pls_comp_list$`_model_r2_`
+sel_pls_comp_list$`_multiclass_metrics_`
+
+save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_ann_ENDO_pos.RData")
+
+features_ann_ENDO_pos <- sel_pls_comp_list$`_selected_variables_`
+features_ann_ENDO_pos <- sort(features_ann_ENDO_pos, decreasing = FALSE)
+features_ann_ENDO_pos <- data.frame(features_ann_ENDO_pos)
+features_ann_ENDO_pos <- gsub("_pos", "",features_ann_ENDO_pos[,1])
+
+
+write.csv(features_ann_ENDO_pos, file = "ENDO_stats_Results/feat_PLS_ann_ENDO_pos.csv")
 
 
 # ---------- Check CoCu Pp features in Sm samples ----------
@@ -342,24 +482,21 @@ comp_list_MoSmEn <- comp_list_MoSmEn[,colSums(comp_list_MoSmEn != 0) > 0]
 
 
 # scale data
-comp_list_MoSmEn <- scale((comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]))
-comp_list_MoSmEn[which(is.na(comp_list_MoSmEn))] <- 0
+#comp_list_MoSmEn <- scale((comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]))
+#comp_list_MoSmEn[which(is.na(comp_list_MoSmEn))] <- 0
 
-heatmaply(comp_list_MoSmEn, 
-          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
-          file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_Sm.html", selfcontained=TRUE)
+# heatmaply(comp_list_MoSmEn, 
+#           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+#           file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_Sm.html", selfcontained=TRUE)
 
 # search in Coculture Sm ENDO
 comp_list_CoSmEn <- comp_list[index_COSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
 comp_list_CoSmEn <- comp_list_CoSmEn[,colSums(comp_list_CoSmEn != 0) > 0]
 
-
-
-
-heatmaply(comp_list_CoSmEn, 
-          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
-          file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_SmCoCu.html", selfcontained=TRUE)
-
+# heatmaply(comp_list_CoSmEn, 
+#           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+#           file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_SmCoCu.html", selfcontained=TRUE)
+# 
 
 # search in Monoculture Sm EXO 
 load("exo_stats_Results/comp_list_EXO.RData")
@@ -370,20 +507,60 @@ max(comp_list_MoSmEx)
 comp_list_MoSmEx <- comp_list_MoSmEx[, (colSums(comp_list_MoSmEx) > max(comp_list_MoSmEx)) > 0]
 
 # plot in heatmap
-heatmaply(comp_list_MoSmEx, 
-          k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
-          file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_EXOSmMonoCu.html", selfcontained=TRUE)
+# heatmaply(comp_list_MoSmEx, 
+#           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
+#           file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_EXOSmMonoCu.html", selfcontained=TRUE)
+
+
 
 # compare the found features
 # ENDO Sm
 features_ENDOSm_Pp <- colnames(comp_list_SmEn)
 count_ENDOSm_Pp <- colSums(comp_list_SmEn != 0)
-ENDOSm_Pp <- c(features_ENDOSm_Pp, count_ENDOSm_Pp )
+count_ENDOSm_Pp <- data.frame(count_ENDOSm_Pp)
+nrow(count_ENDOSm_Pp)
 # EXO MonoCu Sm
 features_EXOMonoSm_Pp <- colnames(comp_list_MoSmEx)
 count_EXOMonoSm_Pp <- colSums(comp_list_MoSmEx != 0)
-EXOMonoSm_Pp <- data.frame(features_EXOMonoSm_Pp, count_EXOMonoSm_Pp)
+count_EXOMonoSm_Pp <- data.frame(count_EXOMonoSm_Pp)
+nrow(count_EXOMonoSm_Pp)
+# create one table with two rows that contain EXO Sm and ENDO Sm as column
+ENDO_Sm <- NA
+EXO_Sm <- NA
+ENDO_Pp_feat <- data.frame(features_CoCuPp, ENDO_Sm, EXO_Sm)
+#rownames(ENDO_Pp_feat) <- rownames(count_EXOMonoSm_Pp)
 
+#length(features_CoCuPp)
+
+for (i in nrow(ENDO_Pp_feat)) {
+  if (ENDO_Pp_feat$features_CoCuPp %in% ){
+    
+  }
+  rownames(feat_list_ENDO)[i] <- gsub("coculture_pos", pheno_data_ENDO$sample_group[i], rownames(feat_list_ENDO)[i])
+}
+
+
+
+
+
+library(VennDiagram)
+
+plot(venn.diagram(
+  x = list(Table1 = comp_list, Table2 = features_CoCuPp),
+  filename = "venn_diagram.png",  # Output file name
+  col = "black",  # Set circle color
+  fill = c("dodgerblue", "darkorange1"),  # Set fill color for each set
+  alpha = 0.5,  # Set transparency level
+  label.col = c("black", "black", "black"),  # Set label color for each set
+  cex = 1.5,  # Set font size
+  fontface = "bold",  # Set font face
+  cat.col = c("dodgerblue", "darkorange1"),  # Set label color for intersection areas
+  cat.cex = 1.5,  # Set font size for intersection labels
+  cat.fontface = "bold",  # Set font face for intersection labels
+  cat.pos = 0,  # Set label position for intersection areas
+  cat.dist = 0.06,  # Set distance between label and area
+  margin = 0.1  # Set margin size
+))
 
 
 # ---------- PCA  ----------
@@ -446,6 +623,7 @@ dev.off()
 
 # --------- ANOVA ----------
 model_anova <- aov(mzml_pheno_origin_samples ~ mzml_pheno_origin_species, data = comp_list)
+
 # only 4 monoculture samples
 comp_list_aov <-  comp_list_Sm[-(6:9),]
 culture_aov <- mzml_pheno_origin_samples[index_SM]
@@ -457,24 +635,46 @@ model_anova <- aov(features ~ culture_aov,
                    data = comp_list_aov)
 
 # --------- t-SNE ----------
-library(M3C)
 
-# subset for testing
-test_tsne <- feat_list_ENDO_Sm[,1:100]
-# normalize to z-score
-test_tsne <- scale(test_tsne)
-# missing value imputation
-test_tsne[which(is.na(test_tsne))] <- 0
-# remove columns that are all 0
-column_sums <- colSums(test_tsne)
-non_zero_cols <- column_sums != 0
-test_tsne <- test_tsne[, non_zero_cols]
+library(Rtsne)
+
+# ERROR: protection stack overflow when using the whole dataset
+load("ENDO_stats_Results/comp_list_ENDO.RData")
+tsne_ENDO <- Rtsne(test, perplexity = 50, check_duplicates = FALSE)
+tsne_ENDO_Sm <- Rtsne(comp_list[index_SM,1:15000], perplexity = 2, check_duplicates = FALSE)
+tsne_ENDO_Pp <- Rtsne(comp_list[index_PP,1:15000], perplexity = 2, check_duplicates = FALSE)
+
+jpeg(filename = "ENDO_stats_plots/ENDO_ms1_tSNE_2.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+par(mfrow=c(1,2), cex.axis=2, cex=1, cex.lab=1.5, cex.main=3)
+plot(tsne_ENDO$Y, col = "black", bg= color, pch = 21, cex = 2,
+     main="all conditions")
+plot(tsne_ENDO_Sm$Y, col = "black", bg= color[index_SM], pch = 21, cex = 2,
+     main="S. marinoi")
+legend("topleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color[index_SM]), legend= unique(mzml_pheno$mzml_pheno_samples_type[index_SM]))
+#title(main = "t-SNE endometabolome")
+plot(tsne_ENDO_Pp$Y, col = "black", bg= color[index_PP], pch = 21, cex = 2,
+     main="P. parvum")
+legend("topright", bty="n", pt.cex=5, cex=2, y.intersp=0.7,  inset = 0.2, xjust = 0, text.width=0.5, pch=20, 
+       col= unique(color[index_PP]), legend= unique(mzml_pheno$mzml_pheno_samples_type[index_PP]))
+#text(tsne_ENDO$Y[,1], tsne_ENDO$Y[,2], labels=str_sub(rownames(comp_list), - 3, - 1), col=color, pos=3, cex=1.5)
+dev.off()
 
 
-tsne(test_tsne, perplexity = 30, labels=as.factor(rownames(test_tsne)))
+load("exo_stats_plots/comp_list_EXO.RData")
+tsne_EXO <- Rtsne(comp_list[,1:15000], perplexity = 5, check_duplicates = FALSE)
+tsne_EXO_Sm <- Rtsne(comp_list[index_SM,1:15000], perplexity = 2, check_duplicates = FALSE)
+tsne_EXO_Pp <- Rtsne(comp_list[index_PP,1:15000], perplexity = 2, check_duplicates = FALSE)
 
-
-
+jpeg(filename = "exo_stats_plots/EXO_ms1_tSNE.jpeg", width = 1500, height = 700, quality = 100, bg = "white")
+par(mfrow=c(1,3), cex.axis=2, cex=1, cex.lab=1.5, cex.main=3)
+plot(tsne_EXO$Y, col = "black", bg= color, pch = 21, cex = 2)
+legend("topleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
+       col= unique(color), legend= unique(mzml_pheno$mzml_pheno_samples_type))
+plot(tsne_EXO_Sm$Y, col = "black", bg= color[index_SM], pch = 21, cex = 2)
+plot(tsne_EXO_Pp$Y, col = "black", bg= color[index_PP], pch = 21, cex = 2)
+#text(tsne_EXO$Y[,1], tsne_EXO$Y[,2], labels=str_sub(rownames(comp_list), - 3, - 1), col=color, pos=3, cex=1.5)
+dev.off()
 
 # -------- Random forest -----
 # Load the data
@@ -505,10 +705,63 @@ dev.off()
 
 
 
+#### code from kristian ####
+
+
+library(parallel) # Detect number of cpu cores
+
+library(foreach) # For multicore parallel
+
+library(doMC) # For multicore parallel <——— !!!!!
+
+library(caret) # Swiss-army knife for statistics
+
+library(randomForest) # Random Forest
+
+
+#Multicore parallel
+
+nSlaves <- detectCores(all.tests=FALSE, logical=FALSE)
+
+#nSlaves <- 16
+
+
+setMSnbaseFastLoad(TRUE)
+
+
+#Set up parallel processing
+
+library(e1071)
+
+library(doMC)
+
+registerDoMC(nSlaves)
+
+
+#Random Forest with comp_list
+
+sel_rf_comp_list <- f.select_features_random_forest(feat_matrix=comp_list, 
+                                                    sel_factor=mzml_pheno_samples, 
+                                                    sel_colors=mzml_pheno_colors, 
+                                                    tune_length=10, quantile_threshold=0.9, 
+                                                    plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_rf_roc.pdf")
+
+print(paste("Number of selected features:", f.count.selected_features(sel_feat=sel_rf_comp_list$`_selected_variables_`)))
+
+f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_rf_comp_list$_selected_variables_, 
+                            sample_colors=mzml_pheno_colors_samples, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, 
+                            filename="plots_species/ms1_comp_list_select_rf.pdf", main="Random Forest")
+
+sel_rf_comp_list$_selected_variables_
+
+sel_rf_comp_list$_multiclass_metrics_
+
+sel_rf_comp_list$_model_r2_
 
 
 
-
+model_rf <- caret::train(x=as.matrix(feat_matrix), y=sel_factor, method="rf", importance=TRUE, proximity=TRUE,
+                         tuneLength=tune_length, trControl=caret::trainControl(method="repeatedcv", number=10, repeats=5, classProbs=TRUE, savePredictions="final"))
 
 
 

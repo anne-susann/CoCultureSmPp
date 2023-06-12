@@ -191,15 +191,15 @@ bina_list_EXO <- bina_list_EXO[-25,]
 # comp_list 
 comp_list <- feat_list_EXO
 comp_list <- comp_list[] # removes missing values
-rownames(comp_list) <- paste(pheno_data_EXO[1:24,1], pheno_data_EXO[1:24,2], sep = "_" )
-row_names <- rownames(comp_list)
-new_row_names <- gsub("KSS_210324_", "", row_names)
-rownames(comp_list) <- new_row_names
+rownames(comp_list) <- rownames(feat_list_EXO)
+#row_names <- rownames(comp_list)
+#new_row_names <- gsub("KSS_210324_", "", row_names)
+#rownames(comp_list) <- new_row_names
 #colnames(comp_list) <- paste0(rownames(ms1_def_EXO_pos)[which(ms1_def_EXO_pos$has_ms2==1)], "_pos")
 
 # bina_list
 bina_list <- bina_list_EXO
-rownames(bina_list) <- paste(pheno_data_EXO[1:24,1], pheno_data_EXO[1:24,2], sep = "_" )
+rownames(bina_list) <- rownames(feat_list_EXO)
 #colnames(bina_list) <- paste0(rownames(ms1_def_EXO_pos)[which(ms1_def_EXO_pos$has_ms2==1)], "_pos")
 
 # uniq_list
@@ -361,10 +361,14 @@ heatmaply(scale(comp_list_Sm[, which(colnames(comp_list_Sm) %in% sel_pls_comp_li
           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256),
           #label = comp_list[25,],
           
-          file="exo_stats_plots/ms1_comp_list_select_pls_Sm.html", selfcontained=TRUE)
+          file="exo_stats_plots/ms1_comp_list_select_pls_Sm_label.html", selfcontained=TRUE)
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
+
+# selected features from PLS 
+features_Sm <- sel_pls_comp_list$`_selected_variables_`
+features_Sm <- sort(features_Sm, decreasing = FALSE)
 
 save(sel_pls_comp_list, file = "exo_stats_Results/sel_pls_comp_list_culture_Sm.RData")
 
@@ -389,16 +393,22 @@ heatmaply(scale(comp_list_Pp[, which(colnames(comp_list_Pp) %in% sel_pls_comp_li
           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256),
           #label = comp_list[25,],
           
-          file="exo_stats_plots/ms1_comp_list_select_pls_Pp_complete_comp_list.html", selfcontained=TRUE)
+          file="exo_stats_plots/ms1_comp_list_select_pls_Pp_label.html", selfcontained=TRUE)
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
 
+# selected features from PLS 
+features_CoCuPp <- sel_pls_comp_list$`_selected_variables_`
+features_CoCuPp <- sort(features_CoCuPp, decreasing = FALSE)
+
 save(sel_pls_comp_list, file = "exo_stats_Results/sel_pls_comp_list_culture_Pp.RData")
 
-#check if selected features are annotated
-# pls_feature_neg <- c("FT18839", "FT18078", "FT17890", "FT13643", "FT04103", "FT09428", "FT14727", "FT14411", "FT07576", "FT02408")
-# matching_features <- match(pls_feature_neg, EXO_neg_annotated$ft_id_x)
+# save selected features in a table
+sel_pls_features_EXO <- c(features_CoCuPp, features_Sm)
+origin_EXO <- c(rep("features_Pp", length(features_CoCuPp)), rep("features_Sm", length(features_Sm)))
+sel_pls_feat_EXO <- data.frame(origin_EXO, sel_pls_features_EXO)
+write.csv(sel_pls_feat_EXO, file = "exo_stats_Results/sel_pls_feat_EXO.csv", row.names = FALSE)
 
 
 # PLS including both factors Species and Culture type

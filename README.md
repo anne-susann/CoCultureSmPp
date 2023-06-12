@@ -18,7 +18,7 @@ Analysis of the MS1 and MS2 data of Co-Culture experiment with _S. marinoi_ and 
 	- PCA
 	- Diversity measures (Shannon diversity index, ...)
 	- PLS 
-	-~~t-SNE~~
+	- t-SNE
 	- Variation partitioning
 	-~~ANOVA~~
 	- Random forest 
