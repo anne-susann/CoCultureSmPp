@@ -32,8 +32,6 @@ library(htmlwidgets)            # For creating html plots
 #library(sunburstR)              # HTML-sunburst plots
 library(heatmaply)              # HTML heatmaps
 library(stringr)              
-library(randomForest)           # Random forest
-library(MetaboAnalystR)         # Random forest
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
