@@ -32,8 +32,6 @@ library(htmlwidgets)            # For creating html plots
 #library(sunburstR)              # HTML-sunburst plots
 #library(heatmaply)              # HTML heatmaps
 library(stringr)              
-library(randomForest)           # Random forest
-library(MetaboAnalystR)         # Random forest
 #library(iESTIMATE)
 source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.r")
 
@@ -420,7 +418,7 @@ table(polarity(msd))
 #} else if (condition_name == "ms1_data_ENDO_neg") {
   # set parameters
   # ENDO neg
-  ms1_params_ENDO_neg <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(14, 59), 
+ms1_params_ENDO_neg <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(14, 59), 
                                        prefilter=c(3, 140), mzdiff=0.0155, snthresh=7, noise=0, 
                                        integrate=1, firstBaselineCheck=TRUE, verboseColumns=FALSE, 
                                        fitgauss=FALSE, roiList=list(), roiScales=numeric())
@@ -733,7 +731,7 @@ feature_info_ENDO_neg <- data.frame(cbind(ms1_data_ENDO_neg@msFeatureData[["feat
 colnames(feature_info_ENDO_neg) <- c("feat_id", "mzmed", "mzmin", "mzmax", "rtmed", "rtmin", "rtmax")
 
 # save as csv
-write.csv(feature_info_ENDO_neg, file = "endo_neg/endo_neg_Results/feature_info_ENDO_neg.csv", row.names = FALSE)
+write.csv(feature_info_ENDO_neg, file = "endo_neg_Results/feature_info_ENDO_neg.csv", row.names = FALSE)
 
 
 ############# linking MS2 data #################

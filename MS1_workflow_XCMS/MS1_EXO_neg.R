@@ -50,6 +50,7 @@ source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.
 
 ########## set directory and list files ########
 
+
 start.time <- Sys.time()
 
 # set data directory for MS1 data files
@@ -553,7 +554,7 @@ processHistory(ms1_data_EXO_neg)
 # save as R object for later use
 MS1_EXO_neg_peak_detection <- ms1_data_EXO_neg
 save(MS1_EXO_neg_peak_detection, file = "exo_neg_Results/MS1_EXO_neg_peak_detection.RData")
-save(ms1_def_EXO_neg, file = "exo_neg_1ms2_Results/ms1_def_EXO_neg.RData")
+save(ms1_def_EXO_neg, file = "exo_neg_Results/ms1_def_EXO_neg.RData")
 
 
 
@@ -693,7 +694,7 @@ feature_info_EXO_neg <- data.frame(cbind(ms1_data_EXO_neg@msFeatureData[["featur
 colnames(feature_info_EXO_neg) <- c("feat_id", "mzmed", "mzmin", "mzmax", "rtmed", "rtmin", "rtmax")
 
 # save as csv
-write.csv(feature_info_EXO_neg, file = "exo_neg/exo_neg_Results/feature_info_EXO_neg.csv", row.names = FALSE)
+write.csv(feature_info_EXO_neg, file = "exo_neg_Results/feature_info_EXO_neg.csv", row.names = FALSE)
 
 
 

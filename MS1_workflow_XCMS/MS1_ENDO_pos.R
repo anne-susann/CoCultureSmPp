@@ -613,7 +613,7 @@ index_PP <- grep("Pp", pheno_data_ENDO$sample_group)
 #test_PP <- data.frame(feat_list_ENDO_pos[index_PP,])
 
 # PCA for Sm
-jpeg(filename = "endo_pos_plots_MS1_Anne/ENDO_pos_ms1_feature_table_pca_SM.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+jpeg(filename = "endo_pos_plots/ENDO_pos_ms1_feature_table_pca_SM.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
 ms1_pca_ENDO_pos_SM <- prcomp(feat_list_ENDO_pos[index_SM,], center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms1_pca_ENDO_pos_SM$x[, 1], ms1_pca_ENDO_pos_SM$x[,2], pch=19, main="PCA of feature table",
@@ -627,7 +627,7 @@ legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=2
 dev.off()
 
 # PCA for Pp
-jpeg(filename = "endo_pos_plots_MS1_Anne/ENDO_pos_ms1_feature_table_pca_PP.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
+jpeg(filename = "endo_pos_plots/ENDO_pos_ms1_feature_table_pca_PP.jpeg", width = 1000, height = 700, quality = 150, bg = "white")
 ms1_pca_ENDO_pos_PP <- prcomp(feat_list_ENDO_pos[index_PP,], center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
 plot(ms1_pca_ENDO_pos_PP$x[, 1], ms1_pca_ENDO_pos_PP$x[,2], pch=19, main="PCA of feature table",
@@ -635,7 +635,7 @@ plot(ms1_pca_ENDO_pos_PP$x[, 1], ms1_pca_ENDO_pos_PP$x[,2], pch=19, main="PCA of
      ylab=paste0("PC2: ", format(summary(ms1_pca_ENDO_pos_PP)$importance[2, 2] * 100, digits=3), " % variance"),
      col=unique(color[index_PP]), cex=2)
 grid()
-text(ms1_pca_ENDO_pos_PP$x[,1], ms1_pca_ENDO_pos_PP$x[,2], labels=str_sub(ms_data_endo_pos$sample_name[index_PP], - 3, - 1), col=unique(color[index_PP]), pos=3, cex=1.5)
+text(ms1_pca_ENDO_pos_PP$x[,1], ms1_pca_ENDO_pos_PP$x[,2], labels=str_sub(ms1_data_ENDO_pos$sample_name[index_PP], - 3, - 1), col=unique(color[index_PP]), pos=3, cex=1.5)
 legend("topleft", bty="n", pt.cex=2, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
        col= unique(color[index_PP]), legend= c("CoCuPp", "Pp"))
 dev.off()
@@ -731,7 +731,7 @@ feature_info_ENDO_pos <- data.frame(cbind(ms1_data_ENDO_pos@msFeatureData[["feat
 colnames(feature_info_ENDO_pos) <- c("feat_id", "mzmed", "mzmin", "mzmax", "rtmed", "rtmin", "rtmax")
 
 # save as csv
-write.csv(feature_info_ENDO_pos, file = "endo_pos/endo_pos_Results/feature_info_ENDO_pos.csv", row.names = FALSE)
+write.csv(feature_info_ENDO_pos, file = "endo_pos_Results/feature_info_ENDO_pos.csv", row.names = FALSE)
 
 
 
