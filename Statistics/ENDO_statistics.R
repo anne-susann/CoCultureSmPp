@@ -305,6 +305,28 @@ features_Pp <- sort(features_Pp, decreasing = FALSE)
 
 #save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Pp_bina.RData")
 load("ENDO_stats_Results/sel_pls_comp_list_culture_Pp_bina.RData")
+# which features in which condition P.PARVUM
+bina_list_Pp_features <- bina_list_Pp[,features_Pp]
+bina_list_Pp_features_Co <- bina_list_Pp_features[c(1,2,3,12),]
+bina_list_Pp_features_Co <- bina_list_Pp_features_Co[,colSums(bina_list_Pp_features_Co)>0]
+bina_features_Pp_Co <- data.frame(colnames(bina_list_Pp_features_Co))
+bina_features_Pp_Co$Description <- "present in Pp Co-culture"
+bina_features_Pp_Co$Condition <- "Co"
+colnames(bina_features_Pp_Co) <- c("Feature", "Description","Condition")
+
+bina_list_Pp_features_Mono <- bina_list_Pp_features[c(4:11),]
+bina_list_Pp_features_Mono <- bina_list_Pp_features_Mono[,colSums(bina_list_Pp_features_Mono)>0]
+bina_features_Pp_Mono <- data.frame(colnames(bina_list_Pp_features_Mono))
+bina_features_Pp_Mono$Description <- "present in Pp Mono-culture"
+bina_features_Pp_Mono$Condition <- "Mono"
+colnames(bina_features_Pp_Mono) <- c("Feature", "Description","Condition")
+
+
+sel_pls_features_Pp_bina <- data.frame(rbind(bina_features_Pp_Co, bina_features_Pp_Mono))
+sel_pls_features_Pp_bina$Feature_id <- gsub("_neg","", sel_pls_features_Pp_bina$Feature)
+sel_pls_features_Pp_bina$Feature_id <- gsub("_pos","", sel_pls_features_Pp_bina$Feature_id)
+write.csv(sel_pls_features_Pp_bina, file = "ENDO_stats_Results/manuscript/sel_pls_features_Pp_bina.csv")
+
 
 
 # PLS according to Culture type by species Sm
@@ -339,6 +361,29 @@ features_Sm <- sort(features_Sm, decreasing = FALSE)
 
 save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Sm_bina.RData")
 load("ENDO_stats_Results/sel_pls_comp_list_culture_Sm_bina.RData")
+
+features_Sm
+# which features in which condition S.MARINOI
+bina_list_Sm_features <- bina_list_Sm[,features_Sm]
+bina_list_Sm_features_Co <- bina_list_Sm_features[c(1,2,3,12),]
+bina_list_Sm_features_Co <- bina_list_Sm_features_Co[,colSums(bina_list_Sm_features_Co)>0]
+bina_features_Sm_Co <- data.frame(colnames(bina_list_Sm_features_Co))
+bina_features_Sm_Co$Description <- "present in Sm Co-culture"
+bina_features_Sm_Co$Condition <- "Co"
+colnames(bina_features_Sm_Co) <- c("Feature", "Description","Condition")
+
+bina_list_Sm_features_Mono <- bina_list_Sm_features[c(4:11),]
+bina_list_Sm_features_Mono <- bina_list_Sm_features_Mono[,colSums(bina_list_Sm_features_Mono)>0]
+bina_features_Sm_Mono <- data.frame(colnames(bina_list_Sm_features_Mono))
+bina_features_Sm_Mono$Description <- "present in Sm Mono-culture"
+bina_features_Sm_Mono$Condition <- "Mono"
+colnames(bina_features_Sm_Mono) <- c("Feature", "Description","Condition")
+
+
+sel_pls_features_Sm_bina <- data.frame(rbind(bina_features_Sm_Co, bina_features_Sm_Mono))
+sel_pls_features_Sm_bina$Feature_id <- gsub("_neg","", sel_pls_features_Sm_bina$Feature)
+sel_pls_features_Sm_bina$Feature_id <- gsub("_pos","", sel_pls_features_Sm_bina$Feature_id)
+write.csv(sel_pls_features_Sm_bina, file = "ENDO_stats_Results/manuscript/sel_pls_features_Sm_bina.csv")
 
 
 
@@ -486,6 +531,10 @@ write.csv(features_ann_ENDO_pos, file = "ENDO_stats_Results/feat_PLS_ann_ENDO_po
 
 
 # ---------- Check CoCu Pp features in Sm samples ----------
+# load bina list features
+sel_pls_feat_ENDO_bina <- read.csv("ENDO_stats_Results/sel_pls_feat_ENDO_bina.csv")
+features_Pp <- sel_pls_feat_ENDO_bina[1:30,2]
+
 # index for monoculture and coculture for the species
 index_MOSM <- grep("Mono-culture S.m", mzml_pheno$mzml_pheno_legend)
 index_MOPP <- grep("Mono-culture P.p", mzml_pheno$mzml_pheno_legend)
@@ -498,7 +547,7 @@ index_COPP <- grep("Co-culture P.p", mzml_pheno$mzml_pheno_legend)
 length(features_Pp)
 
 # search in Sm ENDO metabolome
-comp_list_SmEn <- comp_list[index_SM, which(colnames(comp_list_Sm) %in% features_Pp)]
+comp_list_SmEn <- feat_list_ENDO[index_SM, which(colnames(comp_list_Sm) %in% features_Pp)]
 comp_list_SmEn <- comp_list_SmEn[,colSums(comp_list_SmEn != 0) > 0]
 # remove peaks that are only present in 1 sample
 max(comp_list_SmEn)
@@ -560,6 +609,7 @@ count_ENDOSm_Pp <- colSums(comp_list_SmEn != 0)
 count_ENDOSm_Pp <- data.frame(count_ENDOSm_Pp)
 nrow(count_ENDOSm_Pp)
 
+write.csv(features_ENDOSm_Pp, "ENDO_stats_Results/manuscript/features_ENDOSm_Pp.csv")
 # ENDO Sm Mono
 
 # ENDO Sm Co
@@ -570,6 +620,9 @@ features_EXOMonoSm_Pp <- colnames(comp_list_MoSmEx)
 count_EXOMonoSm_Pp <- colSums(comp_list_MoSmEx != 0)
 count_EXOMonoSm_Pp <- data.frame(count_EXOMonoSm_Pp)
 nrow(count_EXOMonoSm_Pp)
+
+write.csv(features_EXOMonoSm_Pp, "ENDO_stats_Results/manuscript/features_EXOMonoSm_Pp.csv")
+
 # create one table with two rows that contain EXO Sm and ENDO Sm as column
 ENDO_Sm <- NA
 EXO_Sm <- NA
@@ -592,7 +645,7 @@ ENDO_Pp_feat <- data.frame(features_Pp, ENDO_Sm, EXO_Sm)
 library(VennDiagram)
 
 plot(venn.diagram(
-  x = list(Table1 = comp_list, Table2 = features_CoCuPp),
+  x = list(Table1 = comp_list, Table2 = features_Pp),
   filename = "venn_diagram.png",  # Output file name
   col = "black",  # Set circle color
   fill = c("dodgerblue", "darkorange1"),  # Set fill color for each set
