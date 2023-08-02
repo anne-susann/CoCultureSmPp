@@ -34,7 +34,7 @@ ms1_params_ENDO_neg <- CentWaveParam(ppm=25, mzCenterFun="wMean", peakwidth=c(14
 
 ### trial run data_preparation
 msd <- data_preparation(files = raw_data_MS1_ENDO_neg, phenodata = phenodata, result_dir_name = "ENDO_neg_testing_results", 
-                        plots_dir_name = "ENDO_neg_testing_plots", chrom_run_sec = 700, msLevel = 1)
+                        plots_dir_name = "ENDO_neg_testing_plots", chrom_run_sec = 700, msLevel = NULL)
 
 ### trial run chromatogram
 chrom_msd <- chromatogram_qc(msd, phenodata, result_dir_name, plots_dir_name)

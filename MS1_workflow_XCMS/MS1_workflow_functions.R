@@ -21,7 +21,7 @@ source("https://raw.githubusercontent.com/ipb-halle/iESTIMATE/main/R/_functions.
 
 
 # ---- data preparation ----
-data_preparation <- function(files, phenodata, result_dir_name, plots_dir_name, chrom_run_sec, msLevel) {
+data_preparation <- function(files, phenodata, result_dir_name, plots_dir_name, chrom_run_sec, msLevel = NULL) {
   # files = list of mzML files
   # phenodata = csv file of phenodata, including (1) sample_name, (2) sample_group, (3) sample_description
   # result_dir_name = name for directory to store all result files and objects
@@ -55,6 +55,12 @@ data_preparation <- function(files, phenodata, result_dir_name, plots_dir_name, 
   msd <- filterRt(msd, c(0, chrom_run_sec))
   
   # restrict data to MS1
+  if (is.null(msLevel)) {
+    msLevel <- 1
+  } else {
+    msLevel <- msLevel
+  }
+  
   msd <- filterMsLevel(msd, msLevel = msLevel)
   
   # create csv of raw data
@@ -306,5 +312,3 @@ bina_list_creation <- function(ms1_matrix = NULL, intensity_cutoff, result_dir_n
   return(binary_list)
 }
 
-
-##################### statistics ###################################
