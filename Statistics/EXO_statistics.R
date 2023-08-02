@@ -409,7 +409,7 @@ sel_pls_comp_list <- f.select_features_pls(feat_matrix=bina_list_Pp,
                                            components=principal_components, tune_length=10, 
                                            quantile_threshold=0.95, plot_roc_filename="exo_stats_plots/manuscript/ms1_comp_list_select_pls_roc_Pp_bina.pdf")
 print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-jpeg(filename = "exo_stats_plots/manuscript/EXO_comp_list_pls_Pp.jpeg", width = 1000, height = 1800, quality = 100, bg = "white")
+jpeg(filename = "exo_stats_plots/manuscript/EXO_comp_list_pls_Pp_test.jpeg", width = 1000, height = 1800, quality = 100, bg = "white")
 par(mar=c(8,6,4,3), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=2, cex.main=2)
 f.heatmap.selected_features(feat_list=comp_list_Pp, 
                             sel_feat=sel_pls_comp_list$`_selected_variables_`, 
@@ -466,6 +466,25 @@ sel_pls_features_Pp_bina$Feature_id <- gsub("_neg","", sel_pls_features_Pp_bina$
 sel_pls_features_Pp_bina$Feature_id <- gsub("_pos","", sel_pls_features_Pp_bina$Feature_id)
 write.csv(sel_pls_features_Pp_bina, file = "exo_stats_Results/manuscript/sel_pls_features_Pp_bina.csv")
 
+# try plotting with heatmap function
+par(mar=c(20,6,4,3), oma=c(0,0,0,0) 
+    #cex.axis=2, cex=1, cex.lab=2, cex.main=2
+    )
+
+f.heatmap.selected_features(feat_list = bina_list_Pp, sel_feat = sel_pls_comp_list$`_selected_variables_`, 
+                            sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`),
+                            sample_colors=mzml_pheno_colors[index_PP], 
+                            filename = "exo_stats_plots/manuscript/heatmap_PLS_bina_PP2.pdf",
+                            main = "PLS",
+                            scale="col", plot_width= 7, plot_height=7, cex_col=0.5, cex_row=1) 
+
+
+sel_feat = sel_pls_comp_list$`_selected_variables_`
+sel_list <- scale((bina_list_Pp[, which(colnames(bina_list_Pp) %in% sel_feat[["_selected_variables_"]])]),scale=T,center=T)
+heatmap.2(x= as.matrix(sel_list))
+
+
+#"exo_stats_plots/manuscript/heatmap_PLS_bina_PP.jpeg", 
 
 # save selected features in a table
 sel_pls_features_EXO <- c(features_Pp, features_Sm)
