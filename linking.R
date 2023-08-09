@@ -157,27 +157,31 @@ link_ann_inc <- function(inc_tbl, ann_tbl, cond){
   return(ann_tbl)
 }
 
-assign_sig_feat <- function(sig_feat, ann_tbl_modified, cond, pol, feat_col, origin_col){
+assign_sig_feat <- function(sig_feat, ann_tbl_modified, cond, pol, feat_col, species){
   
   sig_feat <- read.csv(sig_feat)
   ann_tbl <- read.csv(ann_tbl_modified)
-  sig_feat_pos <- sig_feat[grepl("_pos", sig_feat[,feat_col]), ]
+  sig_feat_pos <- sig_feat[grepl(pol, sig_feat[,feat_col]), ]
   
-  sig_feat_pos["sig_feat_ids"] <-gsub('_pos', '', sig_feat_pos[,feat_col])
+  sig_feat_pos["sig_feat_ids"] <-gsub(pol, '', sig_feat_pos[,feat_col])
   sig_feat_pos["sig_feat_ids"]
-  
-  ann_tbl["origin"] <- NA
+  ann_tbl[paste(species, "Co", sep = "")] <- NA
+  ann_tbl[paste(species, "Mono", sep = "")] <- NA
 
   for (i in 1:nrow(ann_tbl)){
     if (!(is.na(as.character(ann_tbl[i, "feat_inc"])))){
       for (j in 1:nrow(sig_feat_pos)){
         if (as.character(ann_tbl[i, "feat_inc"]) == as.character(sig_feat_pos[j, "sig_feat_ids"])){
-          ann_tbl[i, "origin"] <- sig_feat_pos[j, origin_col]
+          if ("Co" == as.character(sig_feat_pos[j, "Condition"])){
+            ann_tbl[i, paste(species, "Co", sep = "")] <- "present"
+          }
+          else if ("Mono" == as.character(sig_feat_pos[j, "Condition"])){
+            ann_tbl[i, paste(species, "Mono", sep = "")] <- "present" 
+          }
         }
       }
     }
   }
-  
   write.csv(ann_tbl, paste(cond, "_mergedResults-with-one-Candidates_sig_feat_for_only_inclusion.csv", sep = ""))
   return(ann_tbl)
 }
@@ -198,12 +202,12 @@ cond = "exo_pos"
 mass_col = "Mass"
 rtmin_col = "Start"
 rtmax_col = "End"
-ann_tbl <- "exo_pos_mergedResults-with-one-Candidates.csv"
+ann_tbl <- "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/exo_pos_sirius_mergedResults-with-one-Candidates.csv"
 ann_tbl_modified <- paste(cond, "_ann.csv", sep ="")
-sig_feat <- "sel_pls_feat_EXO.csv"
-feat_col <- "sel_pls_features_EXO"
-origin_col <- "origin_EXO"
+sig_feat <- "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/new_sel_pls_features_Pp_bina.csv"
+feat_col <- "Feature"
 pol = "_pos" # or "_neg"
+species = "Pp"
 
 inc_tbl1 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
 inc_tbl1 
@@ -215,16 +219,23 @@ sig_features <- assign_sig_feat(sig_feat,
                             ann_tbl_modified, 
                             cond, 
                             pol, 
-                            feat_col, 
-                            origin_col)
+                            feat_col,
+                            species)
 
-no_of_sig_feats<- nrow(sig_features[!(is.na(sig_features["origin"])), ])
+no_of_sig_feats_smco<- nrow(sig_features[!(is.na(sig_features["SmCo"])), ])
+no_of_sig_feats_smco
+no_of_sig_feats_ppco<- nrow(sig_features[!(is.na(sig_features["PpCo"])), ])
+no_of_sig_feats_ppco
+no_of_sig_feats_smmono<- nrow(sig_features[!(is.na(sig_features["SmMono"])), ])
+no_of_sig_feats_smmono
+no_of_sig_feats_ppmono<- nrow(sig_features[!(is.na(sig_features["PpMono"])), ])
+no_of_sig_feats_ppmono
+
+
 
 sgg <- sig_features[!(is.na(sig_features["origin"])), ]
-
+sgg
 ##### script for exo_neg #####
-
-
 
 setwd("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking")
 
@@ -234,29 +245,35 @@ cond = "exo_neg"
 mass_col = "Mass"
 rtmin_col = "Start"
 rtmax_col = "End"
-ann_tbl <- "exo_neg_mergedResults-with-one-Candidates.csv"
+ann_tbl <- "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/exo_neg_sirius_mergedResults-with-one-Candidates.csv"
 ann_tbl_modified <- paste(cond, "_ann.csv", sep ="")
-sig_feat <- "sel_pls_feat_EXO.csv"
-feat_col <- "sel_pls_features_EXO"
-origin_col <- "origin_EXO"
+sig_feat <- "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/new_sel_pls_features_Sm_bina.csv"
+feat_col <- "Feature"
 pol = "_neg"
+species = "Sm"
 
-inc_tbl2 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
-inc_tbl2 
+inc_tbl1 <- linking_with_inc_list(ft_csv, inc_csv, cond, mass_col, rtmin_col, rtmax_col)
+inc_tbl1 
 
-ann_tbl2 <- link_ann_inc(inc_tbl = paste("ms_tbl_", cond, ".csv", sep = ""), ann_tbl, cond)
-ann_tbl2
+ann_tbl1 <- link_ann_inc(inc_tbl = paste("ms_tbl_", cond, ".csv", sep = ""), ann_tbl, cond)
+ann_tbl1
 
-sig_features2 <- assign_sig_feat(sig_feat, 
+sig_features <- assign_sig_feat(sig_feat, 
                                 ann_tbl_modified, 
                                 cond, 
                                 pol, 
-                                feat_col, 
-                                origin_col)
+                                feat_col,
+                                species)
 
-no_of_sig_feats2 <- nrow(sig_features2[!(is.na(sig_features2["origin"])), ])
+no_of_sig_feats_smco<- nrow(sig_features[!(is.na(sig_features["SmCo"])), ])
+no_of_sig_feats_smco
+no_of_sig_feats_ppco<- nrow(sig_features[!(is.na(sig_features["PpCo"])), ])
+no_of_sig_feats_ppco
+no_of_sig_feats_smmono<- nrow(sig_features[!(is.na(sig_features["SmMono"])), ])
+no_of_sig_feats_smmono
+no_of_sig_feats_ppmono<- nrow(sig_features[!(is.na(sig_features["PpMono"])), ])
+no_of_sig_feats_ppmono
 
-sig3 <- sig_features2[!(is.na(sig_features2["origin"])), ]
 
 ##### script for endo_neg #####
 
@@ -405,12 +422,12 @@ write.csv(ann_feat_df, "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/
 
 load("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/CoCulture/exo_neg_Results/MS1_EXO_neg_peak_detection.RData")
 
-ft_id <- ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@rownames
-PpCoCu <- ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["CoCuPp"]]
-PpMono <- ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["Pp"]]
-SmCoCu <- ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["CoCuSm"]]
-SmMono <- ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["Sm"]]
-MB <- ms1_data_EXO_neg@msFeatureData[["featureDefinitions"]]@listData[["MB"]]
+ft_id <- MS1_EXO_neg_peak_detection@msFeatureData[["featureDefinitions"]]@rownames
+PpCoCu <- MS1_EXO_neg_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["CoCuPp"]]
+PpMono <- MS1_EXO_neg_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["Pp"]]
+SmCoCu <- MS1_EXO_neg_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["CoCuSm"]]
+SmMono <- MS1_EXO_neg_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["Sm"]]
+MB <- MS1_EXO_neg_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["MB"]]
 
 int_feat_df <- cbind(ft_id, SmMono, SmCoCu, PpMono, PpCoCu, MB)
 
@@ -435,43 +452,44 @@ for (i in 1:nrow(ann_feat_df)){
     }
   }
 }
+ann_feat_df
 write.csv(ann_feat_df, "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/exo_neg_ann_origin_feat_df.csv")
 
 ##### Linking conditions to the feature ids for exo neg#####
 
 load("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/CoCulture/exo_pos_Results/MS1_EXO_pos_peak_detection.RData")
 
-ft_id <- ms1_data_EXO_pos@msFeatureData[["featureDefinitions"]]@rownames
-PpCoCu <- ms1_data_EXO_pos@msFeatureData[["featureDefinitions"]]@listData[["CoCuPp"]]
-PpMono <- ms1_data_EXO_pos@msFeatureData[["featureDefinitions"]]@listData[["Pp"]]
-SmCoCu <- ms1_data_EXO_pos@msFeatureData[["featureDefinitions"]]@listData[["CoCuSm"]]
-SmMono <- ms1_data_EXO_pos@msFeatureData[["featureDefinitions"]]@listData[["Sm"]]
-MB <- ms1_data_EXO_pos@msFeatureData[["featureDefinitions"]]@listData[["MB"]]
+ft_id2 <- MS1_EXO_pos_peak_detection@msFeatureData[["featureDefinitions"]]@rownames
+PpCoCu2 <- MS1_EXO_pos_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["CoCuPp"]]
+PpMono2 <- MS1_EXO_pos_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["Pp"]]
+SmCoCu2 <- MS1_EXO_pos_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["CoCuSm"]]
+SmMono2 <- MS1_EXO_pos_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["Sm"]]
+MB2 <- MS1_EXO_pos_peak_detection@msFeatureData[["featureDefinitions"]]@listData[["MB"]]
 
-int_feat_df <- cbind(ft_id, SmMono, SmCoCu, PpMono, PpCoCu, MB)
+int_feat_df2 <- cbind(ft_id, SmMono, SmCoCu, PpMono, PpCoCu, MB)
 
-ann_feat_df <- read.csv("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/exo_pos_mergedResults-with-one-Candidates_sig_feat_for_only_inclusion.csv")
+ann_feat_df2 <- read.csv("/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/exo_pos_mergedResults-with-one-Candidates_sig_feat_for_only_inclusion.csv")
 
-ann_feat_df["PpCoCu"] <- NA 
-ann_feat_df["SmCoCu"] <- NA 
-ann_feat_df["PpMono"] <- NA 
-ann_feat_df["SmMono"] <- NA 
-ann_feat_df["MB"] <- NA 
+ann_feat_df2["PpCoCu"] <- NA 
+ann_feat_df2["SmCoCu"] <- NA 
+ann_feat_df2["PpMono"] <- NA 
+ann_feat_df2["SmMono"] <- NA 
+ann_feat_df2["MB"] <- NA 
 
-for (i in 1:nrow(ann_feat_df)){
-  if (!(is.na(as.character(ann_feat_df[i, "feat_inc"])))){
-    for (j in 1:nrow(int_feat_df)){
-      if (as.character(ann_feat_df[i, "feat_inc"]) == as.character(int_feat_df[j, "ft_id"])){
-        ann_feat_df[i, "PpCoCu"] <- int_feat_df[j, "PpCoCu"] 
-        ann_feat_df[i, "SmCoCu"] <- int_feat_df[j, "SmCoCu"] 
-        ann_feat_df[i, "PpMono"] <- int_feat_df[j, "PpMono"] 
-        ann_feat_df[i, "SmMono"] <- int_feat_df[j, "SmMono"] 
-        ann_feat_df[i, "MB"] <- int_feat_df[j, "MB"] 
+for (i in 1:nrow(ann_feat_df2)){
+  if (!(is.na(as.character(ann_feat_df2[i, "feat_inc"])))){
+    for (j in 1:nrow(int_feat_df2)){
+      if (as.character(ann_feat_df2[i, "feat_inc"]) == as.character(int_feat_df2[j, "ft_id"])){
+        ann_feat_df2[i, "PpCoCu"] <- int_feat_df2[j, "PpCoCu"] 
+        ann_feat_df2[i, "SmCoCu"] <- int_feat_df2[j, "SmCoCu"] 
+        ann_feat_df2[i, "PpMono"] <- int_feat_df2[j, "PpMono"] 
+        ann_feat_df2[i, "SmMono"] <- int_feat_df2[j, "SmMono"] 
+        ann_feat_df2[i, "MB"] <- int_feat_df2[j, "MB"] 
       }
     }
   }
 }
-write.csv(ann_feat_df, "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/exo_pos_ann_origin_feat_df.csv")
+write.csv(ann_feat_df2,  "/Users/mahnoorzulfiqar/OneDriveUNI/GitHub-Repos/MAW/cwl/Linking/exo_pos_ann_origin_feat_df.csv")
 
 
 
