@@ -1,54 +1,44 @@
-# CoCultureSmPp
-Analysis of the MS1 and MS2 data of Co-Culture experiment with _S. marinoi_ and _P. parvum_
+# Co-culture workflow
+This workflow can be used to pre-process and analyse MS1 data stemming from a two species, untargeted, comparative metabolomics liquid-chromatography tandem mass spectrometry approach. It takes .mzML files as input and gives processed feature lists and statistical analyses of the MS level 1 data.
+
+The workflow was developed using a co-culture experiment between the two microalgal species _S. marinoi_ and _P. parvum_
 
 ## HOW TO:
-1. Pre-process **ONLY MS1 data** with scripts from _/MS1_workflow_XCMS/_ directory. The MS1 data is pre-processed and analysed with specific parameters for each condition (see ENDO_pos, EXO_neg etc.). Run code until ### linking MS2 data ###. Until here you get an overview over the data and first insights into its nature with PCA plots. Created results will be:
-	- ms1_data_xxx_pol: contains all detected peaks and additional information like polarity, msLevel, filterString etc. and contains the further pre-processing 		(saved as XXX_pol_raw_data.csv and MS1_XXX_pol_peak_detection.RData)
-	- feat_list_XXX_pol: contains the features (saved as feature_list_XXX_pol.csv)
-	- bina_list_XXX_pol: a binary list of absence/presence of peaks across the samples (saved as bina_list_XXX_pol.csv)
-	- model_div_XXX_pol: a list with different diversity measures for the samples
-	- ms1_def_XXX_pol: data frame containing the feature definitions
+1. The _MS1 workflow.R_ file uses the functions defined in the _MS1 workflow functions.R_ file to run the workflow with the following pre-processing steps using XCMS functionalities:
+	- data_preparation: the .mzML files are loaded and an XCMSnExp object is created for the MS data
+	- chromatogram_qc: chromatograms are plotted for preliminary data inspection
+	- peak_detection: chromatographic peaks are being detected 
+	- grouping_1: detected peaks are being group throughout the samples
+	- rt_correction: retention time correction is performed and plotted 
+	- grouping_2: peaks are being grouped again after retention time correction
+	- feature_extraction: the feature infomation is extracted from the XCMSnExp object
+	- feature_transformation: a feature list is created with transformed data and imputed missing values
+	- bina_list_creation: a binary list is created for subsequent statistical analysis
 
+2. The inputs to be defined when using in CL mode are as follows:
+	- files: list of .mzMl files
+	- phenodata: .csv file of phenodata, including (1) sample_name, (2) sample_group, (3) sample_description
+	- result_dir_name: name for directory where the results are stored
+	- plots_dir_name: name for directory where the plots are stored
+	- chrom_run_sec: length of chromatography run in seconds
+	- msLevel: (optional) defaults to MS level 1 
+	- CentWaveParam: parameters for peak picking in form of a CentWaveParam class from xcms. Default settings are given but optimization for data at hand is highly recommended
+	- PeakDensityParam_gr: parameters for grouping in form of a PeakDensityParam class from xcms. Default settings are given as minFraction = 0.7, bw = 2.5
+	- PeakGroupsParam_rt: parameters for retention time correction in form of a PeakGroupsParam class from xcms. Default settings are given as minFraction = 0.7, smooth = "loess", span = 0.5, family = "gaussian"
+	- intensity_cutoff: for the creation of the binary list as absence/presence measure, a logarithmically transformed intensity cutoff, can be estimated from a histogram of the feature table
 
-2. Run the pre-processing on **MS1 AND MS2 data COMBINED** with the same parameters using the scripts in the _/MS1and2_workflow_XCMS/_ directory. The necessary objects are saved as .RData.
-
-3. For the linking of MS1 and MS2 data, return to the script in _/MS1_workflow_XCMS/_ and follow from ### linking MS2 data ### on, loading the combined object created in the other directory *ms_data_xxx_pol*. The script establishes a connection between the precursor masses and the origin files using the feature definitions stored in *ms1_def_XXX_pol*, giving the MS2 spectra as a .mgf file to be used with MAW for feature annotation.
-
-4. For in-depth statistical analysis, the _/Statistics/_ directory contains RScripts for several statistical methods. The objects used are the previously produced .csv tables of feat_list and bina_list. The negative and positive feature tables are combined and analysis is performed within the conditions (EXO and ENDO) combined and on species level. Statistical methods used include:
+3. For in-depth statistical analysis, the _/Statistics/_ directory contains RScripts for several statistical methods. The objects used are the previously produced .csv tables of feat_list and bina_list. The negative and positive feature tables are combined and analysis is performed within the conditions (EXO and ENDO) combined and on species level. Statistical methods used include:
 	- PCA
 	- Diversity measures (Shannon diversity index, ...)
 	- PLS 
 	- t-SNE
-	- Variation partitioning
-	-~~ANOVA~~
-	- Random forest 
+	- Variation partitioning 
 
-5. ~~The information from the annotation can be integrated with the statistical analysis, giving annotation to the siginifcant features determined in the statistics~~
+4. By following the _linking.R_ script, MS1 precursor can be linked to MS2 fragementation data. The MS2 fragmentation can be annotated using [MAW](https://github.com/zmahnoor14/MAW)
 
 
 
 ### Additional files and info
-xxx = stand-in for conditions (ENDO, EXO)
-pol = stand-in for polarity (pos, neg)
-related code: [iESTIMATE](https://github.com/ipb-halle/iESTIMATE/blob/main/use-cases/radula-hormones/peak_detection_neg.r)
+some statistical function are from the [iESTIMATE](https://github.com/ipb-halle/iESTIMATE/blob/main/use-cases/radula-hormones/peak_detection_neg.r) repository
 
 
-coculture_modified_endo_pos.R:
-Is the MS1 AND MS2 COMBINED script with the linking included
-
-
-MS1_processing.R: 
-Pre-processing with old XCMS functionalities (xcmsSet) and some statistical analysis of the data (PCA, broken stick)
-
-
-testing_MS1_processing.R: 
-My personal notes for code ideas to be implemented in MS1_processing
-
-
-
-MS1_MS2_precursor.R:
-Find the MS2 precursor mass in the MS1 data by following the iESTIMATE code of ipb-halle
-
-
-MS1_workflow_XCMS.R:
-Clearer version of MS1_MS2_precursor.R, is the pre-processing with newest XCMS functionalities 

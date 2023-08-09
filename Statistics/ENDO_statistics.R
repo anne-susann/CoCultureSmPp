@@ -272,11 +272,11 @@ principal_components <- 5
 
 
 # PLS according to culture type by species Pp
-sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_Pp, 
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=bina_list_Pp, 
                                            sel_factor=mzml_pheno_origin_samples[index_PP], 
                                            sel_colors=mzml_pheno_colors[index_PP], 
                                            components=principal_components, tune_length=10, 
-                                           quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_pls_roc_Pp.pdf")
+                                           quantile_threshold=0.95, plot_roc_filename="ENDO_stats_plots/ms1_comp_list_select_pls_roc_Pp_bina.pdf")
 print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
 f.heatmap.selected_features(feat_list=comp_list_Pp, 
                             sel_feat=sel_pls_comp_list$`_selected_variables_`, 
@@ -284,21 +284,53 @@ f.heatmap.selected_features(feat_list=comp_list_Pp,
                             sample_colors=mzml_pheno_colors[index_PP], plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
 heatmaply(scale(comp_list_Pp[, which(colnames(comp_list_Pp) %in% sel_pls_comp_list$`_selected_variables_`)]), 
           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
-          file="ENDO_stats_plots/ms1_comp_list_select_pls_Pp.html", selfcontained=TRUE)
+          file="ENDO_stats_plots/ms1_comp_list_select_pls_Pp_bina.html", 
+          selfcontained=TRUE,
+          column_text_angle = 90, 
+          showticklabels = c(TRUE, TRUE),
+          #titleX = FALSE,
+          branches_lwd = 0.3,
+          #width = 1000, heigth = 800,
+          #colorbar_thickness = 50,
+          #colorbar_len = 1,
+          cexRow = 2, cexCol = 1.5, cexColorbar = 2)
+
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
 
 # selected features from PLS 
-features_CoCuPp <- sel_pls_comp_list$`_selected_variables_`
-features_CoCuPp <- sort(features_CoCuPp, decreasing = FALSE)
+features_Pp <- sel_pls_comp_list$`_selected_variables_`
+features_Pp <- sort(features_Pp, decreasing = FALSE)
 
-save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Pp.RData")
-#load("ENDO_stats_Results/sel_pls_comp_list_culture_Pp.RData")
+#save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Pp_bina.RData")
+load("ENDO_stats_Results/sel_pls_comp_list_culture_Pp_bina.RData")
+# which features in which condition P.PARVUM
+bina_list_Pp_features <- bina_list_Pp[,features_Pp]
+bina_list_Pp_features_Co <- bina_list_Pp_features[c(1,2,3,12),]
+bina_list_Pp_features_Co <- bina_list_Pp_features_Co[,colSums(bina_list_Pp_features_Co)>0]
+bina_features_Pp_Co <- data.frame(colnames(bina_list_Pp_features_Co))
+bina_features_Pp_Co$Description <- "present in Pp Co-culture"
+bina_features_Pp_Co$Condition <- "Co"
+colnames(bina_features_Pp_Co) <- c("Feature", "Description","Condition")
+
+bina_list_Pp_features_Mono <- bina_list_Pp_features[c(4:11),]
+bina_list_Pp_features_Mono <- bina_list_Pp_features_Mono[,colSums(bina_list_Pp_features_Mono)>0]
+bina_features_Pp_Mono <- data.frame(colnames(bina_list_Pp_features_Mono))
+bina_features_Pp_Mono$Description <- "present in Pp Mono-culture"
+bina_features_Pp_Mono$Condition <- "Mono"
+colnames(bina_features_Pp_Mono) <- c("Feature", "Description","Condition")
+
+
+sel_pls_features_Pp_bina <- data.frame(rbind(bina_features_Pp_Co, bina_features_Pp_Mono))
+sel_pls_features_Pp_bina$Feature_id <- gsub("_neg","", sel_pls_features_Pp_bina$Feature)
+sel_pls_features_Pp_bina$Feature_id <- gsub("_pos","", sel_pls_features_Pp_bina$Feature_id)
+write.csv(sel_pls_features_Pp_bina, file = "ENDO_stats_Results/manuscript/sel_pls_features_Pp_bina.csv")
+
 
 
 # PLS according to Culture type by species Sm
-sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_Sm, 
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=bina_list_Sm, 
                                            sel_factor=mzml_pheno_origin_samples[index_SM], 
                                            sel_colors=mzml_pheno_colors[index_SM], 
                                            components=principal_components, tune_length=10, 
@@ -310,24 +342,67 @@ f.heatmap.selected_features(feat_list=comp_list_Sm,
                             sample_colors=mzml_pheno_colors[index_SM], plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, filename=NULL, main="PLS")
 heatmaply(scale(comp_list_Sm[, which(colnames(comp_list_Sm) %in% sel_pls_comp_list$`_selected_variables_`)]), 
           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
-          file="ENDO_stats_plots/ms1_comp_list_select_pls_Sm.html", selfcontained=TRUE)
+          file="ENDO_stats_plots/ms1_comp_list_select_pls_Sm_bina.html",
+          column_text_angle = 90, 
+          #width = 1000, heigth = 800, 
+          showticklabels = c(TRUE, TRUE),
+          #titleX = FALSE,
+          branches_lwd = 0.3,
+          
+          selfcontained=TRUE, cexRow = 2, cexCol = 1.5, cexColorbar = 2)
+
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
-
-save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Sm.RData")
-#load("ENDO_stats_Results/sel_pls_comp_list_culture_Sm.RData")
 
 # selected features from PLS 
 features_Sm <- sel_pls_comp_list$`_selected_variables_`
 features_Sm <- sort(features_Sm, decreasing = FALSE)
 
+save(sel_pls_comp_list, file = "ENDO_stats_Results/sel_pls_comp_list_culture_Sm_bina.RData")
+load("ENDO_stats_Results/sel_pls_comp_list_culture_Sm_bina.RData")
+
+features_Sm
+# which features in which condition S.MARINOI
+bina_list_Sm_features <- bina_list_Sm[,features_Sm]
+bina_list_Sm_features_Co <- bina_list_Sm_features[c(1,2,3,12),]
+bina_list_Sm_features_Co <- bina_list_Sm_features_Co[,colSums(bina_list_Sm_features_Co)>0]
+bina_features_Sm_Co <- data.frame(colnames(bina_list_Sm_features_Co))
+bina_features_Sm_Co$Description <- "present in Sm Co-culture"
+bina_features_Sm_Co$Condition <- "Co"
+colnames(bina_features_Sm_Co) <- c("Feature", "Description","Condition")
+
+bina_list_Sm_features_Mono <- bina_list_Sm_features[c(4:11),]
+bina_list_Sm_features_Mono <- bina_list_Sm_features_Mono[,colSums(bina_list_Sm_features_Mono)>0]
+bina_features_Sm_Mono <- data.frame(colnames(bina_list_Sm_features_Mono))
+bina_features_Sm_Mono$Description <- "present in Sm Mono-culture"
+bina_features_Sm_Mono$Condition <- "Mono"
+colnames(bina_features_Sm_Mono) <- c("Feature", "Description","Condition")
+
+
+sel_pls_features_Sm_bina <- data.frame(rbind(bina_features_Sm_Co, bina_features_Sm_Mono))
+sel_pls_features_Sm_bina$Feature_id <- gsub("_neg","", sel_pls_features_Sm_bina$Feature)
+sel_pls_features_Sm_bina$Feature_id <- gsub("_pos","", sel_pls_features_Sm_bina$Feature_id)
+write.csv(sel_pls_features_Sm_bina, file = "ENDO_stats_Results/manuscript/sel_pls_features_Sm_bina.csv")
+
+
 
 # save selected features in a table
-sel_pls_features_ENDO <- c(features_CoCuPp, features_Sm)
-origin_ENDO <- c(rep("features_Pp", length(features_CoCuPp)), rep("features_Sm", length(features_Sm)))
-sel_pls_feat_ENDO <- data.frame(origin, sel_pls_features_ENDO)
-write.csv(sel_pls_feat_ENDO, file = "ENDO_stats_Results/sel_pls_feat_ENDO.csv", row.names = FALSE)
+sel_pls_features_ENDO <- c(features_Pp, features_Sm)
+origin_ENDO <- c(rep("features_Pp", length(features_Pp)), rep("features_Sm", length(features_Sm)))
+feature <- gsub("_neg", "", sel_pls_features_ENDO)
+feature <- gsub("_pos", "", feature)
+sel_pls_feat_ENDO <- data.frame(origin_ENDO, sel_pls_features_ENDO, feature)
+write.csv(sel_pls_feat_ENDO, file = "ENDO_stats_Results/sel_pls_feat_ENDO_bina.csv", row.names = FALSE)
+
+# 13.06.
+test_Pp <- comp_list_Pp[, which(colnames(comp_list_Pp) %in% sel_pls_comp_list$`_selected_variables_`)]
+test_Pp_bina_PLS <- comp_list_Pp[, which(colnames(comp_list_Pp) %in% features_Pp)]
+
+test_Sm_bina_PLS <- comp_list_Sm[, which(colnames(comp_list_Sm) %in% features_Sm)]
+
+
+
 
 # ---------- PLS on bina list ----------
 
@@ -456,6 +531,10 @@ write.csv(features_ann_ENDO_pos, file = "ENDO_stats_Results/feat_PLS_ann_ENDO_po
 
 
 # ---------- Check CoCu Pp features in Sm samples ----------
+# load bina list features
+sel_pls_feat_ENDO_bina <- read.csv("ENDO_stats_Results/sel_pls_feat_ENDO_bina.csv")
+features_Pp <- sel_pls_feat_ENDO_bina[1:30,2]
+
 # index for monoculture and coculture for the species
 index_MOSM <- grep("Mono-culture S.m", mzml_pheno$mzml_pheno_legend)
 index_MOPP <- grep("Mono-culture P.p", mzml_pheno$mzml_pheno_legend)
@@ -465,10 +544,10 @@ index_COSM <- grep("Co-culture S.m", mzml_pheno$mzml_pheno_legend)
 index_COPP <- grep("Co-culture P.p", mzml_pheno$mzml_pheno_legend)
 
 # selected features from PLS for CoCuPp
-length(features_CoCuPp)
+length(features_Pp)
 
 # search in Sm ENDO metabolome
-comp_list_SmEn <- comp_list[index_SM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_SmEn <- feat_list_ENDO[index_SM, which(colnames(comp_list_Sm) %in% features_Pp)]
 comp_list_SmEn <- comp_list_SmEn[,colSums(comp_list_SmEn != 0) > 0]
 # remove peaks that are only present in 1 sample
 max(comp_list_SmEn)
@@ -477,8 +556,11 @@ comp_list_SmEn <- comp_list_SmEn[, (colSums(comp_list_SmEn) > max(comp_list_SmEn
 
 
 # search in Monoculture Sm ENDO 
-comp_list_MoSmEn <- comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_MoSmEn <- comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_Pp)]
 comp_list_MoSmEn <- comp_list_MoSmEn[,colSums(comp_list_MoSmEn != 0) > 0]
+# remove peaks that are only present in 1 sample
+max(comp_list_MoSmEn)
+comp_list_MoSmEn <- comp_list_MoSmEn[, (colSums(comp_list_MoSmEn) > max(comp_list_MoSmEn)) > 0]
 
 
 # scale data
@@ -490,8 +572,11 @@ comp_list_MoSmEn <- comp_list_MoSmEn[,colSums(comp_list_MoSmEn != 0) > 0]
 #           file="ENDO_stats_plots/ms1_comp_list_CoCuPp_in_Sm.html", selfcontained=TRUE)
 
 # search in Coculture Sm ENDO
-comp_list_CoSmEn <- comp_list[index_COSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_CoSmEn <- comp_list[index_COSM, which(colnames(comp_list_Sm) %in% features_Pp)]
 comp_list_CoSmEn <- comp_list_CoSmEn[,colSums(comp_list_CoSmEn != 0) > 0]
+# remove peaks that are only present in 1 sample
+max(comp_list_CoSmEn)
+comp_list_CoSmEn <- comp_list_CoSmEn[, (colSums(comp_list_CoSmEn) > max(comp_list_CoSmEn)) > 0]
 
 # heatmaply(comp_list_CoSmEn, 
 #           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256), 
@@ -500,11 +585,15 @@ comp_list_CoSmEn <- comp_list_CoSmEn[,colSums(comp_list_CoSmEn != 0) > 0]
 
 # search in Monoculture Sm EXO 
 load("exo_stats_Results/comp_list_EXO.RData")
-comp_list_MoSmEx <- comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_CoCuPp)]
+comp_list_MoSmEx <- comp_list[index_MOSM, which(colnames(comp_list_Sm) %in% features_Pp)]
 comp_list_MoSmEx <- comp_list_MoSmEx[,colSums(comp_list_MoSmEx != 0) > 0]
 # remove peaks that are only present in 1 sample
 max(comp_list_MoSmEx)
 comp_list_MoSmEx <- comp_list_MoSmEx[, (colSums(comp_list_MoSmEx) > max(comp_list_MoSmEx)) > 0]
+#subset again for which
+comp_list_MoSmEx <- comp_list_MoSmEx[, which(colnames(comp_list_MoSmEx) %in% features_Pp)]
+
+
 
 # plot in heatmap
 # heatmaply(comp_list_MoSmEx, 
@@ -519,25 +608,35 @@ features_ENDOSm_Pp <- colnames(comp_list_SmEn)
 count_ENDOSm_Pp <- colSums(comp_list_SmEn != 0)
 count_ENDOSm_Pp <- data.frame(count_ENDOSm_Pp)
 nrow(count_ENDOSm_Pp)
+
+write.csv(features_ENDOSm_Pp, "ENDO_stats_Results/manuscript/features_ENDOSm_Pp.csv")
+# ENDO Sm Mono
+
+# ENDO Sm Co
+
+
 # EXO MonoCu Sm
 features_EXOMonoSm_Pp <- colnames(comp_list_MoSmEx)
 count_EXOMonoSm_Pp <- colSums(comp_list_MoSmEx != 0)
 count_EXOMonoSm_Pp <- data.frame(count_EXOMonoSm_Pp)
 nrow(count_EXOMonoSm_Pp)
+
+write.csv(features_EXOMonoSm_Pp, "ENDO_stats_Results/manuscript/features_EXOMonoSm_Pp.csv")
+
 # create one table with two rows that contain EXO Sm and ENDO Sm as column
 ENDO_Sm <- NA
 EXO_Sm <- NA
-ENDO_Pp_feat <- data.frame(features_CoCuPp, ENDO_Sm, EXO_Sm)
+ENDO_Pp_feat <- data.frame(features_Pp, ENDO_Sm, EXO_Sm)
 #rownames(ENDO_Pp_feat) <- rownames(count_EXOMonoSm_Pp)
 
 #length(features_CoCuPp)
 
-for (i in nrow(ENDO_Pp_feat)) {
-  if (ENDO_Pp_feat$features_CoCuPp %in% ){
-    
-  }
-  rownames(feat_list_ENDO)[i] <- gsub("coculture_pos", pheno_data_ENDO$sample_group[i], rownames(feat_list_ENDO)[i])
-}
+# for (i in nrow(ENDO_Pp_feat)) {
+#   if (ENDO_Pp_feat$features_CoCuPp %in% ){
+#     
+#   }
+#   rownames(feat_list_ENDO)[i] <- gsub("coculture_pos", pheno_data_ENDO$sample_group[i], rownames(feat_list_ENDO)[i])
+# }
 
 
 
@@ -546,7 +645,7 @@ for (i in nrow(ENDO_Pp_feat)) {
 library(VennDiagram)
 
 plot(venn.diagram(
-  x = list(Table1 = comp_list, Table2 = features_CoCuPp),
+  x = list(Table1 = comp_list, Table2 = features_Pp),
   filename = "venn_diagram.png",  # Output file name
   col = "black",  # Set circle color
   fill = c("dodgerblue", "darkorange1"),  # Set fill color for each set
@@ -748,15 +847,15 @@ sel_rf_comp_list <- f.select_features_random_forest(feat_matrix=comp_list,
 
 print(paste("Number of selected features:", f.count.selected_features(sel_feat=sel_rf_comp_list$`_selected_variables_`)))
 
-f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_rf_comp_list$_selected_variables_, 
-                            sample_colors=mzml_pheno_colors_samples, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, 
-                            filename="plots_species/ms1_comp_list_select_rf.pdf", main="Random Forest")
-
-sel_rf_comp_list$_selected_variables_
-
-sel_rf_comp_list$_multiclass_metrics_
-
-sel_rf_comp_list$_model_r2_
+# f.heatmap.selected_features(feat_list=comp_list, sel_feat=sel_rf_comp_list$_selected_variables_, 
+#                             sample_colors=mzml_pheno_colors_samples, plot_width=7, plot_height=7, cex_col=0.5, cex_row=0.4, 
+#                             filename="plots_species/ms1_comp_list_select_rf.pdf", main="Random Forest")
+# 
+# sel_rf_comp_list$_selected_variables_
+# 
+# sel_rf_comp_list$_multiclass_metrics_
+# 
+# sel_rf_comp_list$_model_r2_
 
 
 

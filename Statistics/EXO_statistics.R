@@ -295,8 +295,6 @@ model_div$hillfunc    <- as.numeric(unlist(calcDiv(comp_list_hillfunc, compDisMa
 # save as model_div as csv
 write.csv(model_div, file=paste(filename = "exo_stats_Results/model_div_exo.csv", sep = ""))
 
-# color for shannon plot
-col_shan <- c(unique(CoCuPp1), unique(CoCuSm1), unique(CoCuPp1), unique(CoCuSm1))
 
 # Plot Shannon index
 pdf(paste("exo_stats_plots/ms1_comp_list_diversity_shannon_Culture.pdf",sep=""), encoding="ISOLatin1", pointsize=10, width=5, height=5, family="Helvetica")
@@ -341,27 +339,35 @@ principal_components <- 5
 
 
 # PLS according to Culture type on Species level Skeletonema marinoi
-sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_Sm, 
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=bina_list_Sm, 
                                            sel_factor=mzml_pheno_origin_samples[index_SM], 
                                            sel_colors=mzml_pheno_colors[index_SM], 
                                            components=principal_components, tune_length=10, 
-                                           quantile_threshold=0.95, plot_roc_filename="exo_stats_plots/ms1_comp_list_select_pls_roc_Sm.pdf")
+                                           quantile_threshold=0.95, plot_roc_filename="exo_stats_plots/manuscript/ms1_comp_list_select_pls_roc_Sm_bina.pdf")
 print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-jpeg(filename = "exo_stats_plots/EXO_comp_list_pls_Sm.jpeg", width = 1000, height = 1800, quality = 100, bg = "white")
+jpeg(filename = "exo_stats_plots/manuscript/EXO_comp_list_pls_Sm_bina.jpeg", width = 1000, height = 1800, quality = 100, bg = "white")
 par(mar=c(8,6,4,3), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=2, cex.main=2)
 f.heatmap.selected_features(feat_list=comp_list_Sm, 
                             sel_feat=sel_pls_comp_list$`_selected_variables_`, 
                             sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`), 
                             sample_colors=mzml_pheno_colors[index_SM], plot_width=7, plot_height=7, 
-                            #cex_col=0.5, cex_row=0.4, 
+                            cex_col=0.5, cex_row=0.4, 
                             filename=NULL, main="PLS")
 #text(ms1_pca_EXO$x[,1], ms1_pca_EXO$x[,2], labels=str_sub(ms1_data_EXO_pos$sample_name[1:24], - 3, - 1), col=color, pos=3, cex=1.5)
 dev.off()
 heatmaply(scale(comp_list_Sm[, which(colnames(comp_list_Sm) %in% sel_pls_comp_list$`_selected_variables_`)]), 
           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256),
           #label = comp_list[25,],
-          
-          file="exo_stats_plots/ms1_comp_list_select_pls_Sm_label.html", selfcontained=TRUE)
+          file="exo_stats_plots/manuscript/ms1_comp_list_select_pls_Sm_label_bina.html", 
+                #"exo_stats_plots/manuscript/ms1_comp_list_select_pls_Sm_label_bina.jpeg"), 
+          selfcontained=TRUE,
+          column_text_angle = 90, 
+          #showticklabels = c(FALSE, TRUE),
+          #titleX = FALSE,
+          branches_lwd = 0.3,
+          width = 1000, heigth = 800, 
+          cexRow = 2)
+
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
@@ -370,16 +376,40 @@ sel_pls_comp_list$`_multiclass_metrics_`
 features_Sm <- sel_pls_comp_list$`_selected_variables_`
 features_Sm <- sort(features_Sm, decreasing = FALSE)
 
-save(sel_pls_comp_list, file = "exo_stats_Results/sel_pls_comp_list_culture_Sm.RData")
+save(sel_pls_comp_list, file = "exo_stats_Results/manuscript/sel_pls_comp_list_culture_Sm_bina.RData")
+load(file = "exo_stats_Results/manuscript/sel_pls_comp_list_culture_Sm_bina.RData")
+
+# which features in which condition S.MARINOI
+bina_list_Sm_features <- bina_list_Sm[,features_Sm]
+bina_list_Sm_features_Co <- bina_list_Sm_features[c(1,2,3,12),]
+bina_list_Sm_features_Co <- bina_list_Sm_features_Co[,colSums(bina_list_Sm_features_Co)>0]
+bina_features_Sm_Co <- data.frame(colnames(bina_list_Sm_features_Co))
+bina_features_Sm_Co$Description <- "present in Sm Co-culture"
+bina_features_Sm_Co$Condition <- "Co"
+colnames(bina_features_Sm_Co) <- c("Feature", "Description","Condition")
+
+bina_list_Sm_features_Mono <- bina_list_Sm_features[c(4:11),]
+bina_list_Sm_features_Mono <- bina_list_Sm_features_Mono[,colSums(bina_list_Sm_features_Mono)>0]
+bina_features_Sm_Mono <- data.frame(colnames(bina_list_Sm_features_Mono))
+bina_features_Sm_Mono$Description <- "present in Sm Mono-culture"
+bina_features_Sm_Mono$Condition <- "Mono"
+colnames(bina_features_Sm_Mono) <- c("Feature", "Description","Condition")
+
+
+sel_pls_features_Sm_bina <- data.frame(rbind(bina_features_Sm_Co, bina_features_Sm_Mono))
+sel_pls_features_Sm_bina$Feature_id <- gsub("_neg","", sel_pls_features_Sm_bina$Feature)
+sel_pls_features_Sm_bina$Feature_id <- gsub("_pos","", sel_pls_features_Sm_bina$Feature_id)
+write.csv(sel_pls_features_Sm_bina, file = "exo_stats_Results/manuscript/sel_pls_features_Sm_bina.csv")
+
 
 # PLS according to Culture type on Species level Prymnesium parvum
-sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list_Pp, 
+sel_pls_comp_list <- f.select_features_pls(feat_matrix=bina_list_Pp, 
                                            sel_factor=mzml_pheno_origin_samples[index_PP], 
                                            sel_colors=mzml_pheno_colors[index_PP], 
                                            components=principal_components, tune_length=10, 
-                                           quantile_threshold=0.95, plot_roc_filename="exo_stats_plots/ms1_comp_list_select_pls_roc_Pp.pdf")
+                                           quantile_threshold=0.95, plot_roc_filename="exo_stats_plots/manuscript/ms1_comp_list_select_pls_roc_Pp_bina.pdf")
 print(paste("Number of selected variables:", f.count.selected_features(sel_feat=sel_pls_comp_list$`_selected_variables_`)))
-jpeg(filename = "exo_stats_plots/EXO_comp_list_pls_Pp.jpeg", width = 1000, height = 1800, quality = 100, bg = "white")
+jpeg(filename = "exo_stats_plots/manuscript/EXO_comp_list_pls_Pp_test.jpeg", width = 1000, height = 1800, quality = 100, bg = "white")
 par(mar=c(8,6,4,3), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=2, cex.main=2)
 f.heatmap.selected_features(feat_list=comp_list_Pp, 
                             sel_feat=sel_pls_comp_list$`_selected_variables_`, 
@@ -392,24 +422,83 @@ dev.off()
 heatmaply(scale(comp_list_Pp[, which(colnames(comp_list_Pp) %in% sel_pls_comp_list$`_selected_variables_`)]), 
           k_row=1, k_col=1, colors=colorRampPalette(c('darkblue','white','darkred'), alpha=0.1, bias=1)(256),
           #label = comp_list[25,],
-          
-          file="exo_stats_plots/ms1_comp_list_select_pls_Pp_label.html", selfcontained=TRUE)
+          file="exo_stats_plots/manuscript/ms1_comp_list_select_pls_Pp_label_bina.html", 
+          selfcontained=TRUE,
+          #column_text_angle = 90, 
+          showticklabels = c(FALSE, TRUE),
+          #titleX = FALSE,
+          branches_lwd = 0.3,
+          width = 1000, heigth = 800,
+          #colorbar_thickness = 50,
+          #colorbar_len = 1,
+          cexRow = 2, cexColorbar = 2)
+
 sel_pls_comp_list$`_selected_variables_`
 sel_pls_comp_list$`_model_r2_`
 sel_pls_comp_list$`_multiclass_metrics_`
 
 # selected features from PLS 
-features_CoCuPp <- sel_pls_comp_list$`_selected_variables_`
-features_CoCuPp <- sort(features_CoCuPp, decreasing = FALSE)
+features_Pp <- sel_pls_comp_list$`_selected_variables_`
+features_Pp <- sort(features_Pp, decreasing = FALSE)
 
-save(sel_pls_comp_list, file = "exo_stats_Results/sel_pls_comp_list_culture_Pp.RData")
+save(sel_pls_comp_list, file = "exo_stats_Results/manuscript/sel_pls_comp_list_culture_Pp_bina.RData")
+load(file = "exo_stats_Results/manuscript/sel_pls_comp_list_culture_Pp_bina.RData")
+
+# which features in which condition P.PARVUM
+bina_list_Pp_features <- bina_list_Pp[,features_Pp]
+bina_list_Pp_features_Co <- bina_list_Pp_features[c(1,2,3,12),]
+bina_list_Pp_features_Co <- bina_list_Pp_features_Co[,colSums(bina_list_Pp_features_Co)>0]
+bina_features_Pp_Co <- data.frame(colnames(bina_list_Pp_features_Co))
+bina_features_Pp_Co$Description <- "present in Pp Co-culture"
+bina_features_Pp_Co$Condition <- "Co"
+colnames(bina_features_Pp_Co) <- c("Feature", "Description","Condition")
+
+bina_list_Pp_features_Mono <- bina_list_Pp_features[c(4:11),]
+bina_list_Pp_features_Mono <- bina_list_Pp_features_Mono[,colSums(bina_list_Pp_features_Mono)>0]
+bina_features_Pp_Mono <- data.frame(colnames(bina_list_Pp_features_Mono))
+bina_features_Pp_Mono$Description <- "present in Pp Mono-culture"
+bina_features_Pp_Mono$Condition <- "Mono"
+colnames(bina_features_Pp_Mono) <- c("Feature", "Description","Condition")
+
+
+sel_pls_features_Pp_bina <- data.frame(rbind(bina_features_Pp_Co, bina_features_Pp_Mono))
+sel_pls_features_Pp_bina$Feature_id <- gsub("_neg","", sel_pls_features_Pp_bina$Feature)
+sel_pls_features_Pp_bina$Feature_id <- gsub("_pos","", sel_pls_features_Pp_bina$Feature_id)
+write.csv(sel_pls_features_Pp_bina, file = "exo_stats_Results/manuscript/sel_pls_features_Pp_bina.csv")
+
+# try plotting with heatmap function
+par(mar=c(20,6,4,3), oma=c(0,0,0,0) 
+    #cex.axis=2, cex=1, cex.lab=2, cex.main=2
+    )
+
+f.heatmap.selected_features(feat_list = bina_list_Pp, sel_feat = sel_pls_comp_list$`_selected_variables_`, 
+                            sel_names=paste0("",sel_pls_comp_list$`_selected_variables_`),
+                            sample_colors=mzml_pheno_colors[index_PP], 
+                            filename = "exo_stats_plots/manuscript/heatmap_PLS_bina_PP2.pdf",
+                            main = "PLS",
+                            scale="col", plot_width= 7, plot_height=7, cex_col=0.5, cex_row=1) 
+
+
+sel_feat = sel_pls_comp_list$`_selected_variables_`
+sel_list <- scale((bina_list_Pp[, which(colnames(bina_list_Pp) %in% sel_feat[["_selected_variables_"]])]),scale=T,center=T)
+heatmap.2(x= as.matrix(sel_list))
+
+
+#"exo_stats_plots/manuscript/heatmap_PLS_bina_PP.jpeg", 
 
 # save selected features in a table
-sel_pls_features_EXO <- c(features_CoCuPp, features_Sm)
-origin_EXO <- c(rep("features_Pp", length(features_CoCuPp)), rep("features_Sm", length(features_Sm)))
-sel_pls_feat_EXO <- data.frame(origin_EXO, sel_pls_features_EXO)
-write.csv(sel_pls_feat_EXO, file = "exo_stats_Results/sel_pls_feat_EXO.csv", row.names = FALSE)
+sel_pls_features_EXO <- c(features_Pp, features_Sm)
+origin_EXO <- c(rep("features_Pp", length(features_Pp)), rep("features_Sm", length(features_Sm)))
+feature <- gsub("_neg", "", sel_pls_features_EXO)
+feature <- gsub("_pos", "", feature)
+sel_pls_feat_EXO <- data.frame(origin_EXO, sel_pls_features_EXO, feature)
+write.csv(sel_pls_feat_EXO, file = "exo_stats_Results/manuscript/sel_pls_feat_EXO_bina.csv", row.names = FALSE)
 
+# 13.06.
+test_Pp <- comp_list_Pp[, which(colnames(comp_list_Pp) %in% sel_pls_comp_list$`_selected_variables_`)]
+test_Pp_bina_PLS <- comp_list_Pp[, which(colnames(comp_list_Pp) %in% sel_pls_comp_list$`_selected_variables_`)]
+
+test_Sm_bina_PLS <- comp_list_Sm[, which(colnames(comp_list_Sm) %in% sel_pls_comp_list$`_selected_variables_`)]
 
 # PLS including both factors Species and Culture type
 # sel_pls_comp_list <- f.select_features_pls(feat_matrix=comp_list, 
@@ -429,21 +518,22 @@ write.csv(sel_pls_feat_EXO, file = "exo_stats_Results/sel_pls_feat_EXO.csv", row
 # sel_pls_comp_list$`_model_r2_`
 # sel_pls_comp_list$`_multiclass_metrics_`
 # 
-# save(sel_pls_comp_list, file = "exo_stats_Results/sel_pls_comp_list_SPCU.RData")
+# save(sel_pls_comp_list, file = "exo_stats_Results/manuscript/sel_pls_comp_list_SPCU.RData")
 
 # ---------- PCA  ----------
 # combined feature table pos and neg
-jpeg(filename = "exo_stats_plots/EXO_ms1_feature_table_pca.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+jpeg(filename = "exo_stats_plots/EXO_pca.jpeg", width = 1000, height = 1000, quality = 100, bg = "white")
 ms1_pca_EXO <- prcomp(comp_list[1:24,], center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
-plot(ms1_pca_EXO$x[, 1], ms1_pca_EXO$x[,2], pch=19, main="PCA of feature table",
+plot(ms1_pca_EXO$x[, 1], ms1_pca_EXO$x[,2], pch=19, main="a) PCA of mono- and co-culture exometabolome",
      xlab=paste0("PC1: ", format(summary(ms1_pca_EXO)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms1_pca_EXO)$importance[2, 2] * 100, digits=3), " % variance"),
      col=color, cex=2)
-grid()
-text(ms1_pca_EXO$x[,1], ms1_pca_EXO$x[,2], labels=str_sub(rownames(feat_list_EXO)[1:24], - 3, - 1), col=color, pos=3, cex=1.5)
+-grid()
+text(ms1_pca_EXO$x[,1], ms1_pca_EXO$x[,2], labels=str_sub(rownames(feat_list_EXO)[1:24], - 3, - 1), 
+     col=color, pos=3, cex=1.5)
 legend("bottomleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(color), legend= unique(mzml_pheno$mzml_pheno_samples_type))
+       col= unique(color), legend= c("Co-culture P.p", "Co-culture S.m", "Mono-culture S.m", "Mono-culture P.p"))
 dev.off()
 
 # Skeletonema marinoi
@@ -544,17 +634,17 @@ comp_list_Comb <- rbind(comp_list_Mono, comp_list[index_CO,])
 
 # ---------- PCA  ----------
 # color vector
-MonoCu <- rep("#C53270", 8)
+MonoCu <- rep("green4", 8)
 color_comb <- c(MonoCu, color[index_CO])
 
 # legend vector
 MonoLeg <- "Mono-culture combined"
 
 # plot EXO CoCuSm and EXO CoCuPp against sum of EXO MonoCuSm and EXO MonoCuPp
-jpeg(filename = "exo_stats_plots/EXO_ms1_feature_table_pca_CombinedMonovsCo.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
+jpeg(filename = "exo_stats_plots/EXO_pca_CombinedMonovsCo.jpeg", width = 1000, height = 700, quality = 100, bg = "white")
 ms1_pca_EXO <- prcomp(comp_list_Comb, center=TRUE)
 par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
-plot(ms1_pca_EXO$x[, 1], ms1_pca_EXO$x[,2], pch=19, main="PCA of feature table",
+plot(ms1_pca_EXO$x[, 1], ms1_pca_EXO$x[,2], pch=19, main="c) PCA of combined exometabolome",
      xlab=paste0("PC1: ", format(summary(ms1_pca_EXO)$importance[2, 1] * 100, digits=3), " % variance"),
      ylab=paste0("PC2: ", format(summary(ms1_pca_EXO)$importance[2, 2] * 100, digits=3), " % variance"),
      col=color_comb, cex=2)
@@ -562,9 +652,34 @@ grid()
 text(ms1_pca_EXO$x[,1], ms1_pca_EXO$x[,2], labels=str_sub(c(rownames(feat_list_EXO)[index_MOSM], rownames(feat_list_EXO)[index_CO]), - 3, - 1), 
      col=color_comb, pos=3, cex=1.5)
 legend("bottomleft", bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20, 
-       col= unique(color_comb), legend= unique(c( MonoLeg, mzml_pheno$mzml_pheno_legend[index_CO])))
+       col= unique(color_comb), legend= c( MonoLeg, "Co-culture P.p", "Co-culture S.m"))
 dev.off()
 
+jpeg("exo_stats_plots/BrokenStick_EXO_pca_1.jpeg", width=1000, height=1000, quality=100, bg = "white") 
+evplot = function(ev) {  
+  # Broken stick model (MacArthur 1957)  
+  n = length(ev)  
+  bsm = data.frame(j=seq(1:n), p=0)  
+  bsm$p[1] = 1/n  
+  for (i in 2:n) bsm$p[i] = bsm$p[i-1] + (1/(n + 1 - i))  
+  bsm$p = 100*bsm$p/n  
+  # Plot eigenvalues and % of variation for each axis  
+  op = par(mar=c(6,6,4,1), oma=c(0,0,0,0), cex.axis=2, cex=1, cex.lab=3, cex.main=3)
+
+  #barplot(ev, main="Eigenvalues ENDO MS1 grouping", col="blue", las=2)  
+  #abline(h=mean(ev), col="red")  
+  #legend("topright", "Average eigenvalue", lwd=1, col=2, bty="n")  
+  barplot(t(cbind(100*ev/sum(ev), bsm$p[n:1])), beside=TRUE,   
+          main="b) Broken stick test for PCA a)", col=c("blue",2), las=2, ylab = "% variation", xlab = "principal components")  
+  legend(50, 24, c("% eigenvalue", "Broken stick model"),   
+         col=c("blue",2), bty="n", pt.cex=5, cex=2, y.intersp=0.7, text.width=0.5, pch=20) 
+  box(col = "black")
+  par(op)  
+} 
+
+ev_pc = ms1_pca_EXO$sdev^2  
+evplot(ev_pc)  
+dev.off()
 
 
 
